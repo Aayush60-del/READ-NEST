@@ -233,7 +233,7 @@ const AuthPage = () => {
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="Enter your passwordEnter your passwordEnter your passwordEnter your passwordEnter your passwordEnter your passwordEnter your passwordEnter your password"
                     value={formData.password}
                     onChange={handleChange}
                     className="h-12 rounded-xl border-white/10 bg-black/40 px-4 text-sm text-white placeholder:text-white/20 focus-visible:border-[#c97b6b] focus-visible:ring-1 focus-visible:ring-[#c97b6b] transition-all"
@@ -328,6 +328,7 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
 
 
 
