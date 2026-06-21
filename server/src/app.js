@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const helmet = require("helmet");
@@ -67,7 +67,7 @@ app.post("/api/test-notification", protect, async (req, res) => {
   try {
     await notificationService.sendNotification({
       userId: req.user.id,
-      title: "🔥 ReadNest",
+      title: "ðŸ”¥ ReadNest",
       message: "Firebase notification system is working successfully.",
       type: "system",
       url: "/overview",
@@ -87,4 +87,26 @@ app.get("/get", (req, res) => {
 // Initialize background jobs
 initCronJobs();
 
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "ReadNest API is running",
+    service: "readnest-backend"
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "OK",
+    message: "ReadNest backend is healthy"
+  });
+});
+
 module.exports = app;
+
+
+
+
+
