@@ -63,7 +63,7 @@ api.interceptors.response.use(
 export const ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
+    REGISTER: '/auth/signup',
     PROFILE: '/auth/profile',
     CHANGE_PASSWORD: '/auth/change-password',
     ACCOUNT: '/auth/account',
@@ -99,4 +99,6 @@ export const ENDPOINTS = {
 };
 
 export default api;
+
+
 

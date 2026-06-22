@@ -23,6 +23,8 @@ const AnimatedBackground = () => (
 );
 
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [loginMode, setLoginMode] = useState('user'); // 'user' | 'admin'
@@ -288,7 +290,7 @@ const AuthPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <Button
-                  onClick={() => { window.location.href = 'http://localhost:5000/auth/google'; }}
+                  onClick={() => { window.location.href = `${API_BASE_URL}/auth/google`; }}
                   variant="outline"
                   className="transition-colors h-11 rounded-xl border-white/10 bg-black/20 hover:bg-white/5 text-white/70 hover:text-white"
                 >
@@ -302,7 +304,7 @@ const AuthPage = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => { window.location.href = 'http://localhost:5000/auth/github'; }}
+                  onClick={() => { window.location.href = `${API_BASE_URL}/auth/github`; }}
                   className="transition-colors h-11 rounded-xl border-white/10 bg-black/20 hover:bg-white/5 text-white/70 hover:text-white"
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4 mr-2" fill="currentColor">
@@ -328,6 +330,8 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
+
 
 
 
