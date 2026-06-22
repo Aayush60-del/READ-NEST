@@ -208,7 +208,7 @@
     }
   }
 
-  /* Hide scrollbar but keep scrollability â€” used in dashboard horizontal scroll */
+  /* Hide scrollbar but keep scrollability - used in dashboard horizontal scroll */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

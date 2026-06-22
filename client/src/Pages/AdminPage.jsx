@@ -55,7 +55,7 @@ const AdminPage = () => {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-            {/* Navigation â€” horizontal scroll on mobile, vertical sidebar on desktop */}
+            {/* Navigation - horizontal scroll on mobile, vertical sidebar on desktop */}
             <div className="w-full lg:w-64 shrink-0">
               <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-[#243040]/50 rounded-2xl p-2 lg:sticky lg:top-32 shadow-sm transition-colors duration-300">
                 <div className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0 scrollbar-hide">

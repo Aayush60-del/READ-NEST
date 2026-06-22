@@ -185,7 +185,7 @@ const AuthPage = () => {
                 exit="exit"
                 className="space-y-5"
               >
-                {/* Name â€” signup only */}
+                {/* Name - signup only */}
                 {activeTab === 'signup' && (
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">
@@ -279,7 +279,7 @@ const AuthPage = () => {
             </AnimatePresence>
           </form>
 
-          {/* Social Auth â€” only for user login */}
+          {/* Social Auth - only for user login */}
           {loginMode === 'user' && (
             <>
               <div className="flex items-center gap-4 mt-8 mb-6">

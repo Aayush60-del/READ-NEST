@@ -124,7 +124,7 @@ const ProfilePage = () => {
               </div>
               <div>
                 <p className="text-[10px] text-black/50 dark:text-white/50 uppercase tracking-widest font-bold mb-1">Books Completed</p>
-                <p className="text-4xl font-serif text-black dark:text-white transition-colors">{loading ? 'â€”' : stats.CompletedBooks}</p>
+                <p className="text-4xl font-serif text-black dark:text-white transition-colors">{loading ? '-' : stats.CompletedBooks}</p>
               </div>
             </motion.div>
 
@@ -139,7 +139,7 @@ const ProfilePage = () => {
               </div>
               <div>
                 <p className="text-[10px] text-black/50 dark:text-white/50 uppercase tracking-widest font-bold mb-1">Pages Read</p>
-                <p className="text-4xl font-serif text-black dark:text-white transition-colors">{loading ? 'â€”' : stats.totalPagesRead}</p>
+                <p className="text-4xl font-serif text-black dark:text-white transition-colors">{loading ? '-' : stats.totalPagesRead}</p>
               </div>
             </motion.div>
           </div>

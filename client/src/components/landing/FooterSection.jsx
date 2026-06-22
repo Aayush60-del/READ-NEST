@@ -41,7 +41,7 @@ const FooterSection = () => {
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-8 border-t border-white/[0.04]">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <span className="text-[15px] text-[var(--color-text-muted)] tracking-wide hover:text-white" style={{ fontFamily: 'var(--font-accent)' }}>
-            Â© 2026 ReadNest. All rights reserved.
+            (c) 2026 ReadNest. All rights reserved.
           </span>
 
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8">

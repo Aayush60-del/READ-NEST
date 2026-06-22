@@ -2,7 +2,8 @@
 importScripts("https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js");
 
-// Replace these placeholders with your Firebase web app config when enabling push notifications.
+// Configure these values during deployment if background push notifications are enabled.
+// Keep placeholders in source control; the worker disables itself gracefully until configured.
 const firebaseConfig = {
   apiKey: "YOUR_FIREBASE_API_KEY",
   authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
@@ -24,13 +25,15 @@ if (isConfigured) {
     const notificationTitle = payload.notification?.title || "ReadNest";
     const notificationOptions = {
       body: payload.notification?.body || "You have a new notification.",
-      icon: "/favicon.svg",
-      badge: "/favicon.svg",
+      icon: "/favicon.ico",
+      badge: "/favicon-32x32.png",
       data: payload.data || {},
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
   });
+} else {
+  console.info("[Firebase SW] Background messaging disabled: Firebase config is not set.");
 }
 
 self.addEventListener("notificationclick", (event) => {

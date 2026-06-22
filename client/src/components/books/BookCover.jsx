@@ -72,7 +72,7 @@ const BookCover = ({
           </div>
           <div className="relative z-10 ml-4 flex items-center gap-2 text-white/40">
             <span className="h-px flex-1 bg-white/25" />
-            <span className="text-xs">âœ¦</span>
+            <span className="text-xs">*</span>
           </div>
         </div>
       )}

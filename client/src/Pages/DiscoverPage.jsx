@@ -149,7 +149,7 @@ const DiscoverPage = () => {
                                         </div>
 
                                         <h2 className="text-3xl md:text-5xl font-serif text-black dark:text-white mb-2 leading-tight group-hover:text-[#c97b6b] transition-colors">{featuredBook.title}</h2>
-                                        <p className="font-sans text-xl text-[#c97b6b] mb-6 italic">â€” {featuredBook.author}</p>
+                                        <p className="font-sans text-xl text-[#c97b6b] mb-6 italic">- {featuredBook.author}</p>
                                         <p className="text-black/60 dark:text-white/60 leading-relaxed font-serif text-lg mb-8 line-clamp-3">
                                             {featuredBook.description || 'A fresh pick from your ReadNest library.'}
                                         </p>

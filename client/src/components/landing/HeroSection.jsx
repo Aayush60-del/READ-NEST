@@ -1,6 +1,6 @@
 ﻿import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Library, Sparkles } from "lucide-react";
+import { BookOpen, Library, Sparkles } from "lucide-react";
 import AnimateIcon from "@/components/animate-ui/AnimateIcon";
 
 const HeroSection = () => {

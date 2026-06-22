@@ -135,7 +135,7 @@ const OverviewPage = () => {
           <div className="flex justify-between items-end mb-6">
             <h2 className="text-xl font-serif font-bold text-black dark:text-white transition-colors duration-300">Continue Reading</h2>
             <Link to="/library" className="text-xs font-bold tracking-[0.15em] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1.5 uppercase">
-              Full Library <span className="text-lg leading-none">â†—</span>
+              Full Library <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
@@ -209,12 +209,12 @@ const OverviewPage = () => {
             <div className="md:col-span-4 flex flex-col gap-6">
               <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent p-6 rounded-[24px] flex flex-col justify-center min-h-[140px] transition-colors duration-300">
                 <BookOpen className="w-5 h-5 text-black/40 dark:text-white/40 mb-3" />
-                <div className="text-4xl font-serif text-black dark:text-white mb-1">{loading ? 'â€”' : stats?.CompletedBooks ?? 0}</div>
+                <div className="text-4xl font-serif text-black dark:text-white mb-1">{loading ? '-' : stats?.CompletedBooks ?? 0}</div>
                 <div className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">Books Completed</div>
               </div>
               <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent p-6 rounded-[24px] flex flex-col justify-center min-h-[140px] transition-colors duration-300">
                 <FileText className="w-5 h-5 text-black/40 dark:text-white/40 mb-3" />
-                <div className="text-4xl font-serif text-black dark:text-white mb-1">{loading ? 'â€”' : stats?.totalPagesRead ?? 0}</div>
+                <div className="text-4xl font-serif text-black dark:text-white mb-1">{loading ? '-' : stats?.totalPagesRead ?? 0}</div>
                 <div className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">Pages Read</div>
               </div>
             </div>
@@ -230,7 +230,7 @@ const OverviewPage = () => {
                         Day {streak}
                       </h3>
                       <p className="text-[10px] text-[#c97b6b] dark:text-[#e8a898] font-bold tracking-widest uppercase mt-1">
-                        {streak === 0 ? 'Start your streak today' : streak >= 30 ? 'ðŸ† Legendary Streak!' : streak >= 7 ? 'ðŸŒŸ On fire!' : 'Reading Streak'}
+                        {streak === 0 ? 'Start your streak today' : streak >= 30 ? 'Legendary Streak!' : streak >= 7 ? 'On fire!' : 'Reading Streak'}
                       </p>
                     </div>
                   </div>
@@ -274,7 +274,13 @@ const OverviewPage = () => {
                       streak >= 7 ? 'bg-orange-500/20 text-orange-500' :
                       'bg-black/10 dark:bg-white/10 text-black/40 dark:text-white/40'
                     }`}>
-                      {streak >= 30 ? 'ðŸ†' : streak >= 7 ? 'âš¡' : 'ðŸ“–'}
+                      {streak >= 30 ? (
+                        <Trophy className="w-4 h-4" />
+                      ) : streak >= 7 ? (
+                        <Zap className="w-4 h-4" />
+                      ) : (
+                        <BookOpen className="w-4 h-4" />
+                      )}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-black dark:text-white">
@@ -292,7 +298,7 @@ const OverviewPage = () => {
                     </div>
                   </div>
                   <Link to="/stats" className="inline-flex items-center gap-1 text-[10px] font-bold text-[#c97b6b] tracking-widest uppercase hover:opacity-70 transition-opacity">
-                    Stats â†—
+                    Stats <ArrowUpRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>

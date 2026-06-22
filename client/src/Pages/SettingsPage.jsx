@@ -283,7 +283,7 @@ const SettingsPage = () => {
 
           <div className="space-y-6">
 
-            {/* â”€â”€ Profile Settings â”€â”€ */}
+            {/* -- Profile Settings -- */}
             <Section title="Profile" description="Update your display name and email" icon={User} delay={0.05}>
               <form onSubmit={handleProfileSave} className="space-y-5">
                 {/* Avatar */}
@@ -327,13 +327,13 @@ const SettingsPage = () => {
                     whileTap={{ scale: 0.97 }}
                     className="px-6 py-2.5 bg-[#c97b6b] hover:bg-[#b8695c] text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-colors disabled:opacity-60"
                   >
-                    {profileStatus.loading ? 'Savingâ€¦' : 'Save Profile'}
+                    {profileStatus.loading ? 'Saving...' : 'Save Profile'}
                   </motion.button>
                 </div>
               </form>
             </Section>
 
-            {/* â”€â”€ Change Password â”€â”€ */}
+            {/* -- Change Password -- */}
             <Section title="Account Security" description="Change your password" icon={Lock} accentColor="#5227FF" delay={0.1}>
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <Field
@@ -394,13 +394,13 @@ const SettingsPage = () => {
                     whileTap={{ scale: 0.97 }}
                     className="px-6 py-2.5 bg-[#1a1a2e] dark:bg-[#5227FF] hover:opacity-90 text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-colors disabled:opacity-60"
                   >
-                    {passwordStatus.loading ? 'Updatingâ€¦' : 'Update Password'}
+                    {passwordStatus.loading ? 'Updating...' : 'Update Password'}
                   </motion.button>
                 </div>
               </form>
             </Section>
 
-            {/* â”€â”€ Notification Settings â”€â”€ */}
+            {/* -- Notification Settings -- */}
             <Section title="Notifications" description="Manage your push notifications and alerts" icon={Bell} accentColor="#f59e0b" delay={0.12}>
               <div className="space-y-4">
                 <Toggle 
@@ -435,7 +435,7 @@ const SettingsPage = () => {
               </div>
             </Section>
 
-            {/* â”€â”€ Preferences â”€â”€ */}
+            {/* -- Preferences -- */}
             <Section title="Preferences" description="Personalize your experience" icon={isDark ? Moon : Sun} accentColor="#2f766d" delay={0.15}>
               <div className="flex items-center justify-between">
                 <div>
@@ -459,7 +459,7 @@ const SettingsPage = () => {
               </div>
             </Section>
 
-            {/* â”€â”€ Security / Danger Zone â”€â”€ */}
+            {/* -- Security / Danger Zone -- */}
             <Section title="Security" description="Session and account management" icon={LogOut} accentColor="#ef4444" delay={0.2}>
               <div className="space-y-4">
                 {/* Sign Out */}

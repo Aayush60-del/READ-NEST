@@ -11,13 +11,11 @@ import {
     Sun, Moon, Coffee, Eye, Settings2, Check, Clock,
     BarChart2, RefreshCw, AlertTriangle, FileX
 } from 'lucide-react';
-import api, { ENDPOINTS, getStoredSession } from '@/lib/api';
+import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
 
-// â”€â”€ PDF.js Worker (local, avoids CDN CORS issues) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Using the local pdfjs-dist worker bundled with react-pdf for reliability
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-// â”€â”€ Reading Modes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const READING_MODES = {
     dark: {
         label: 'Dark',
@@ -57,7 +55,7 @@ const READING_MODES = {
     },
 };
 
-// â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Toast ----------------------------------------------------------------------
 const Toast = ({ message, type = 'success', onDone }) => {
     useEffect(() => {
         const t = setTimeout(onDone, 2500);
@@ -83,7 +81,7 @@ const Toast = ({ message, type = 'success', onDone }) => {
     );
 };
 
-// â”€â”€ PDF Error States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- PDF Error States ----------------------------------------------------------
 const PDFErrorState = ({ type, theme, onRetry }) => {
     if (type === 'missing') {
         return (
@@ -120,14 +118,14 @@ const PDFErrorState = ({ type, theme, onRetry }) => {
     );
 };
 
-// â”€â”€ Main Reader â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Main Reader ----------------------------------------------------------------
 const ReaderPage = () => {
     const { id } = useParams();
     const containerRef = useRef(null);
     const autoSaveTimerRef = useRef(null);
     const readingStartRef = useRef(Date.now());
 
-    // â”€â”€ Core state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Core state ----------------------------------------------------------
     const [book, setBook] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -135,11 +133,11 @@ const ReaderPage = () => {
     const [pdfError, setPdfError] = useState(false);  // PDF-specific render error
     const [retryCount, setRetryCount] = useState(0);
 
-    // â”€â”€ Single source of truth for page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Single source of truth for page -------------------------------------
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
 
-    // â”€â”€ Reader UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Reader UI -----------------------------------------------------------
     const [zoom, setZoom] = useState(1.0);
     const [mode, setMode] = useState('dark');
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -150,7 +148,7 @@ const ReaderPage = () => {
     const [bookmarkRecords, setBookmarkRecords] = useState([]);
     const [isCurrentPageBookmarked, setIsCurrentPageBookmarked] = useState(false);
 
-    // â”€â”€ Reading stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Reading stats --------------------------------------------------------
     const [pagesRead, setPagesRead] = useState(new Set());
     const [readingMinutes, setReadingMinutes] = useState(0);
 
@@ -161,26 +159,31 @@ const ReaderPage = () => {
     const pdfFile = useMemo(() => {
         if (!pdfUrl) return null;
 
-        const isBackendPdf =
-            pdfUrl.includes("/lib/books/") || pdfUrl.includes("localhost:5000");
+        const resolvedUrl = pdfUrl.startsWith("http")
+            ? pdfUrl
+            : `${API_BASE_URL}${pdfUrl.startsWith("/") ? "" : "/"}${pdfUrl}`;
 
-        if (!isBackendPdf) return pdfUrl;
+        const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
+        const pdfOrigin = new URL(resolvedUrl, window.location.origin).origin;
+        const isBackendPdf = pdfOrigin === apiOrigin || resolvedUrl.includes("/lib/books/");
+
+        if (!isBackendPdf) return resolvedUrl;
 
         const { token } = getStoredSession();
 
         return {
-            url: pdfUrl,
+            url: resolvedUrl,
             httpHeaders: token ? { Authorization: `Bearer ${token}` } : {},
             withCredentials: false,
         };
     }, [pdfUrl]);
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Helpers --------------------------------------------------------------
     const showToast = useCallback((message, type = 'success') => {
         setToast({ message, type, id: Date.now() });
     }, []);
 
-    // â”€â”€ Fetch book data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Fetch book data ------------------------------------------------------
     const fetchReaderData = useCallback(async () => {
         setLoading(true);
         setError('');
@@ -210,7 +213,7 @@ const ReaderPage = () => {
             setBookmarkRecords(records);
             setBookmarks(records.map((item) => item.pageNumber));
 
-            // 4. Get signed S3 URL
+            // 4. Get backend PDF URL
             const urlRes = await api.get(ENDPOINTS.BOOKS.READ(id));
             if (!urlRes?.url) {
                 setPdfError('missing');
@@ -229,13 +232,13 @@ const ReaderPage = () => {
         if (id) fetchReaderData();
     }, [id, fetchReaderData, retryCount]);
 
-    // â”€â”€ Track pages read â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Track pages read -----------------------------------------------------
     useEffect(() => {
         setPagesRead(prev => new Set([...prev, currentPage]));
         setIsCurrentPageBookmarked(bookmarks.includes(currentPage));
     }, [currentPage, bookmarks]);
 
-    // â”€â”€ Reading time tracker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Reading time tracker -------------------------------------------------
     useEffect(() => {
         const timer = setInterval(() => {
             setReadingMinutes(Math.round((Date.now() - readingStartRef.current) / 60000));
@@ -243,7 +246,7 @@ const ReaderPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // â”€â”€ Save progress function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Save progress function -----------------------------------------------
     const saveProgress = useCallback(
         async (page = currentPage, silent = false) => {
             if (!id || !page || page < 1) return;
@@ -261,7 +264,7 @@ const ReaderPage = () => {
         [id, currentPage, showToast]
     );
 
-    // â”€â”€ Auto-save every 30 seconds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Auto-save every 30 seconds --------------------------------------------
     useEffect(() => {
         autoSaveTimerRef.current = setInterval(() => {
             saveProgress(currentPage, true);
@@ -269,7 +272,7 @@ const ReaderPage = () => {
         return () => clearInterval(autoSaveTimerRef.current);
     }, [currentPage, saveProgress]);
 
-    // â”€â”€ Save on page unload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Save on page unload --------------------------------------------------
     const currentPageRef = useRef(currentPage);
     currentPageRef.current = currentPage;
     useEffect(() => {
@@ -287,7 +290,7 @@ const ReaderPage = () => {
         };
     }, [saveProgress]);
 
-    // â”€â”€ Keyboard navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Keyboard navigation --------------------------------------------------
     useEffect(() => {
         const handleKey = e => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -305,7 +308,7 @@ const ReaderPage = () => {
         return () => window.removeEventListener('keydown', handleKey);
     }, [totalPages]);
 
-    // â”€â”€ Fullscreen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Fullscreen -----------------------------------------------------------
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(() => {});
@@ -319,7 +322,7 @@ const ReaderPage = () => {
         return () => document.removeEventListener('fullscreenchange', handle);
     }, []);
 
-    // â”€â”€ Bookmark current page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Bookmark current page ------------------------------------------------
     const toggleBookmark = async () => {
         const has = bookmarks.includes(currentPage);
 
@@ -347,18 +350,18 @@ const ReaderPage = () => {
         }
     };
 
-    // â”€â”€ Zoom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Zoom -----------------------------------------------------------------
     const zoomIn = () =>
         setZoom(z => Math.min(3.0, parseFloat((z + 0.15).toFixed(2))));
     const zoomOut = () =>
         setZoom(z => Math.max(0.5, parseFloat((z - 0.15).toFixed(2))));
 
-    // â”€â”€ Retry handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Retry handler ---------------------------------------------------------
     const handleRetry = () => {
         setRetryCount(c => c + 1);
     };
 
-    // â”€â”€ PDF callbacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- PDF callbacks ---------------------------------------------------------
     const onDocumentLoadSuccess = ({ numPages }) => {
         setTotalPages(numPages);
         setPdfError(false);
@@ -369,18 +372,18 @@ const ReaderPage = () => {
         setPdfError('load');
     };
 
-    // â”€â”€ Page navigation helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Page navigation helpers ----------------------------------------------
     const goToPrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
     const goToNextPage = () =>
         setCurrentPage(p => Math.min(totalPages || p, p + 1));
 
-    // â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Loading screen --------------------------------------------------------
     if (loading) {
         return (
             <div className="h-screen w-screen bg-[#0f1419] flex flex-col items-center justify-center gap-4">
                 <div className="w-12 h-12 border-4 border-[#c97b6b]/30 border-t-[#c97b6b] rounded-full animate-spin" />
                 <p className="text-white/50 font-serif text-lg animate-pulse">
-                    Opening your bookâ€¦
+                    Opening your book...
                 </p>
             </div>
         );
@@ -418,7 +421,7 @@ const ReaderPage = () => {
             className="h-screen w-screen flex flex-col overflow-hidden font-sans select-none"
             style={{ background: theme.bg }}
         >
-            {/* â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- TOAST ----------------------------------------------------- */}
             <AnimatePresence>
                 {toast && (
                     <Toast
@@ -430,7 +433,7 @@ const ReaderPage = () => {
                 )}
             </AnimatePresence>
 
-            {/* â”€â”€ TOP TOOLBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- TOP TOOLBAR ----------------------------------------------- */}
             <header
                 className={`flex-none h-14 px-4 flex items-center justify-between z-30 border-b ${theme.border}`}
                 style={{ background: theme.bg }}
@@ -455,7 +458,7 @@ const ReaderPage = () => {
                     </div>
                 </div>
 
-                {/* Center â€” Page indicator (single source of truth) */}
+                {/* Center page indicator */}
                 <div className="hidden md:flex items-center gap-2 shrink-0">
                     <button
                         id="btn-prev-page"
@@ -469,7 +472,7 @@ const ReaderPage = () => {
                     <div
                         className={`px-3 py-1 rounded-lg border ${theme.border} text-[11px] font-bold tracking-widest ${theme.text} bg-white/5`}
                     >
-                        {currentPage} / {totalPages || 'â€¦'} &nbsp;Â·&nbsp; {progress}%
+                        {currentPage} / {totalPages || '...'} <span className="px-1 opacity-40">|</span> {progress}%
                     </div>
                     <button
                         id="btn-next-page"
@@ -552,9 +555,9 @@ const ReaderPage = () => {
                 </div>
             </header>
 
-            {/* â”€â”€ MAIN CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- MAIN CONTENT ----------------------------------------------- */}
             <div className="flex-1 flex overflow-hidden relative">
-                {/* PDF Viewer â€” react-pdf Document/Page only, NO iframe/embed/object */}
+                {/* PDF Viewer: react-pdf Document/Page only */}
                 <main className="flex-1 overflow-auto flex items-start justify-center py-6 px-2">
                     {pdfError === 'missing' ? (
                         <PDFErrorState type="missing" theme={theme} onRetry={handleRetry} />
@@ -609,7 +612,7 @@ const ReaderPage = () => {
                     )}
                 </main>
 
-                {/* â”€â”€ SETTINGS PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* -- SETTINGS PANEL -------------------------------------- */}
                 <AnimatePresence>
                     {activePanel === 'settings' && (
                         <motion.aside
@@ -670,7 +673,7 @@ const ReaderPage = () => {
                                     <p
                                         className={`text-[10px] font-bold tracking-widest uppercase mb-3 opacity-50 ${theme.text}`}
                                     >
-                                        Zoom â€” {Math.round(zoom * 100)}%
+                                        Zoom - {Math.round(zoom * 100)}%
                                     </p>
                                     <input
                                         type="range"
@@ -729,7 +732,7 @@ const ReaderPage = () => {
                         </motion.aside>
                     )}
 
-                    {/* â”€â”€ STATS PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                    {/* -- STATS PANEL ------------------------------------- */}
                     {activePanel === 'stats' && (
                         <motion.aside
                             initial={{ x: 320, opacity: 0 }}
@@ -758,7 +761,7 @@ const ReaderPage = () => {
                                 {[
                                     {
                                         label: 'Current Page',
-                                        value: `${currentPage} / ${totalPages || 'â€¦'}`,
+                                        value: `${currentPage} / ${totalPages || '...'}`,
                                         icon: BookOpen,
                                     },
                                     {
@@ -817,7 +820,7 @@ const ReaderPage = () => {
                 </AnimatePresence>
             </div>
 
-            {/* â”€â”€ BOTTOM PROGRESS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* -- BOTTOM PROGRESS BAR ---------------------------------------- */}
             <footer
                 className={`flex-none h-16 flex items-center gap-4 px-6 z-30 border-t ${theme.border}`}
                 style={{ background: theme.bg }}
@@ -843,7 +846,7 @@ const ReaderPage = () => {
                     </button>
                 </div>
 
-                {/* Progress slider â€” directly controls currentPage (single source of truth) */}
+                {/* Progress slider */}
                 <div className="flex-1 flex items-center gap-3">
                     <span className={`text-[10px] font-bold opacity-40 shrink-0 ${theme.text}`}>
                         1
@@ -859,7 +862,7 @@ const ReaderPage = () => {
                         title={`Page ${currentPage} of ${totalPages}`}
                     />
                     <span className={`text-[10px] font-bold opacity-40 shrink-0 ${theme.text}`}>
-                        {totalPages || 'â€¦'}
+                        {totalPages || '...'}
                     </span>
                 </div>
 
@@ -872,7 +875,7 @@ const ReaderPage = () => {
                     title="Save reading progress"
                 >
                     <Save className="w-3.5 h-3.5" />
-                    {saving ? 'Savingâ€¦' : 'Save'}
+                    {saving ? 'Saving...' : 'Save'}
                 </button>
             </footer>
         </div>
