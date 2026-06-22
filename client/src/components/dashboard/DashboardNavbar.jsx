@@ -326,7 +326,13 @@ const DashboardNavbar = ({ hideLogo = true }) => {
                   <NavLink to="/settings" onClick={() => setMobileNavOpen(false)} className="flex items-center px-4 py-3 rounded-lg text-black/50 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 text-sm font-medium tracking-wide">
                     <Settings className="w-4 h-4 mr-4" /> Settings
                   </NavLink>
-                  <button className="w-full flex items-center px-4 py-3 rounded-lg text-black/50 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 text-sm font-medium tracking-wide">
+                  <button
+                    onClick={() => {
+                      setMobileNavOpen(false);
+                      navigate('/feedback');
+                    }}
+                    className="w-full flex items-center px-4 py-3 rounded-lg text-black/50 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 text-sm font-medium tracking-wide"
+                  >
                     <HelpCircle className="w-4 h-4 mr-4" /> Support
                   </button>
                 </div>

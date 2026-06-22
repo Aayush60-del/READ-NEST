@@ -441,7 +441,7 @@ const saveUserProgress = async (req, res) => {
         if (isCompleted && (!existingProgress || !existingProgress.isCompleted)) {
             await notificationService.sendNotification({
                 userId,
-                title: "ðŸ“š Book Completed",
+                title: "Book Completed",
                 message: `Congratulations! You finished reading ${book.title}.`,
                 type: "book_completed",
                 url: `/books/${bookId}`
@@ -480,7 +480,7 @@ const saveUserProgress = async (req, res) => {
 
                         await notificationService.sendNotification({
                             userId,
-                            title: `ðŸ”¥ ${newStreak} Day Streak Unlocked`,
+                            title: `${newStreak} Day Streak Unlocked`,
                             message: msg,
                             type: "streak_achievement",
                             url: "/stats"
@@ -489,7 +489,7 @@ const saveUserProgress = async (req, res) => {
                 }
             }
         } catch (streakErr) {
-            // Non-blocking â€” streak failure shouldn't break progress save
+            // Non-blocking - streak failure shouldn't break progress save
             console.error("Streak update failed:", streakErr.message);
         }
 
@@ -528,11 +528,9 @@ const PdfRead = async (req, res) => {
             return res.status(404).json({ message: "PDF file not found for this book" });
         }
 
-        const apiBaseUrl = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
-
         return res.status(200).json({
             message: "PDF proxy URL generated successfully",
-            url: `${apiBaseUrl}/lib/books/${bookId}/pdf-file`
+            url: `/lib/books/${bookId}/pdf-file`
         });
     } catch (err) {
         console.log(err.message);
@@ -569,16 +567,39 @@ const streamBookPdf = async (req, res) => {
 
         const key = getPdfKeyFromBook(bookData);
 
+        const filename = String(bookData.title || "book").replace(/[^\w .-]/g, "").trim() || "book";
+
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(bookData.title || "book")}.pdf"`);
+        res.setHeader("Content-Disposition", `inline; filename="${filename}.pdf"`);
         res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Accept-Ranges", "bytes");
 
         // Local upload fallback
         if (!process.env.AWS_S3_BUCKET_NAME) {
             const localPath = path.join(__dirname, "../../public/uploads", key);
 
             if (key && fs.existsSync(localPath)) {
-                return res.sendFile(localPath);
+                const stat = fs.statSync(localPath);
+                const range = req.headers.range;
+
+                if (range) {
+                    const parts = range.replace(/bytes=/, "").split("-");
+                    const start = parseInt(parts[0], 10);
+                    const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+
+                    if (Number.isNaN(start) || Number.isNaN(end) || start >= stat.size || end >= stat.size) {
+                        res.setHeader("Content-Range", `bytes */${stat.size}`);
+                        return res.status(416).end();
+                    }
+
+                    res.status(206);
+                    res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+                    res.setHeader("Content-Length", String(end - start + 1));
+                    return fs.createReadStream(localPath, { start, end }).pipe(res);
+                }
+
+                res.setHeader("Content-Length", String(stat.size));
+                return fs.createReadStream(localPath).pipe(res);
             }
 
             return res.status(404).json({
@@ -593,12 +614,19 @@ const streamBookPdf = async (req, res) => {
             });
         }
 
+        const range = req.headers.range;
         const command = new GetObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET_NAME,
             Key: key,
+            ...(range ? { Range: range } : {}),
         });
 
         const s3Response = await s3.send(command);
+
+        if (range && s3Response.ContentRange) {
+            res.status(206);
+            res.setHeader("Content-Range", s3Response.ContentRange);
+        }
 
         if (s3Response.ContentLength) {
             res.setHeader("Content-Length", String(s3Response.ContentLength));

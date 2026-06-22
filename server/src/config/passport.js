@@ -81,11 +81,25 @@ function maybeUseGitHubStrategy() {
             return done(new Error("GitHub profile missing id"));
           }
 
+          const email =
+            profile?.emails?.find((item) => item.verified)?.value ||
+            profile?.emails?.[0]?.value ||
+            `github-${githubId}@users.noreply.github.com`;
+
           let user = await User.findOne({ githubId });
+
+          if (!user && email) {
+            user = await User.findOne({ email });
+            if (user && !user.githubId) {
+              user.githubId = githubId;
+              await user.save();
+            }
+          }
 
           if (!user) {
             user = await User.create({
               githubId,
+              email,
               name: profile.displayName || profile.username,
             });
           }

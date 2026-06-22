@@ -15,6 +15,14 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+const sessionSecret =
+  process.env.SESSION_SECRET ||
+  (process.env.NODE_ENV !== "production" ? "readnest-local-session-secret" : null);
+
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET is required in production.");
+}
+
 const app = express();
 
 // Required when running behind Render proxy for rate limiting
@@ -28,6 +36,7 @@ app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow 
 app.use(cors({
   origin: process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true,
+  exposedHeaders: ["Accept-Ranges", "Content-Length", "Content-Range", "Content-Type"],
 }));
 
 app.use(express.json());
@@ -36,7 +45,7 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 app.use(
     session({
-        secret: "readnest",
+        secret: sessionSecret,
         resave: false,
         saveUninitialized: false
     })
@@ -70,7 +79,7 @@ app.post("/api/test-notification", protect, async (req, res) => {
   try {
     await notificationService.sendNotification({
       userId: req.user.id,
-      title: "ðŸ”¥ ReadNest",
+      title: "ReadNest",
       message: "Firebase notification system is working successfully.",
       type: "system",
       url: "/overview",

@@ -365,6 +365,7 @@ const ReaderPage = () => {
     const onDocumentLoadSuccess = ({ numPages }) => {
         setTotalPages(numPages);
         setPdfError(false);
+        setCurrentPage((page) => Math.min(Math.max(page, 1), numPages || 1));
     };
 
     const onDocumentLoadError = err => {

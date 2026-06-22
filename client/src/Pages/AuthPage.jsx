@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import api, { ENDPOINTS, saveSession } from '@/lib/api';
+import api, { ENDPOINTS, clearSession, saveSession } from '@/lib/api';
 import { ArrowLeft, BookOpenCheck, ShieldCheck, User } from 'lucide-react';
 import AnimateIcon from '@/components/animate-ui/AnimateIcon';
 
@@ -30,6 +30,7 @@ const AuthPage = () => {
   const [loginMode, setLoginMode] = useState('user'); // 'user' | 'admin'
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [status, setStatus] = useState({ loading: false, message: '', type: '' });
+  const [forgotMessage, setForgotMessage] = useState('');
 
   const navigate = useNavigate();
 
@@ -49,17 +50,19 @@ const AuthPage = () => {
 
       const endpoint = isLogin ? ENDPOINTS.AUTH.LOGIN : ENDPOINTS.AUTH.REGISTER;
       const payload = await api.post(endpoint, body);
-      saveSession(payload);
 
       // Admin mode: verify role
       if (loginMode === 'admin') {
         if (payload.user?.role !== 'admin') {
+          clearSession();
           setStatus({ loading: false, message: 'Access denied. This account does not have admin privileges.', type: 'error' });
           return;
         }
+        saveSession(payload);
         setStatus({ loading: false, message: 'Admin access granted.', type: 'success' });
         navigate('/admin');
       } else {
+        saveSession(payload);
         setStatus({ loading: false, message: payload.message || 'Welcome to ReadNest.', type: 'success' });
         navigate('/overview');
       }
@@ -226,9 +229,13 @@ const AuthPage = () => {
                       Password
                     </Label>
                     {activeTab === 'signin' && (
-                      <a href="#" className="text-[10px] font-bold text-[#c97b6b] hover:text-[#c97b6b]/80 transition-colors tracking-widest uppercase">
+                      <button
+                        type="button"
+                        onClick={() => setForgotMessage('Password reset is not available yet. Please contact support or sign in with Google/GitHub if your account uses OAuth.')}
+                        className="text-[10px] font-bold text-[#c97b6b] hover:text-[#c97b6b]/80 transition-colors tracking-widest uppercase"
+                      >
                         Forgot?
-                      </a>
+                      </button>
                     )}
                   </div>
                   <Input
@@ -243,6 +250,15 @@ const AuthPage = () => {
                 </div>
 
                 <div className="pt-2" />
+
+                {forgotMessage && activeTab === 'signin' && (
+                  <div
+                    role="status"
+                    className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+                  >
+                    {forgotMessage}
+                  </div>
+                )}
 
                 {status.message && (
                   <div

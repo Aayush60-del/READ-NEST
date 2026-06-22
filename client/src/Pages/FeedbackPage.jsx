@@ -11,6 +11,7 @@ import {
   Send,
   ShieldCheck,
 } from "lucide-react";
+import { getStoredSession } from "@/lib/api";
 
 const feedbackTypes = [
   { id: "feedback", label: "Feedback", Icon: MessageSquare },
@@ -19,6 +20,7 @@ const feedbackTypes = [
 ];
 
 const FeedbackPage = () => {
+  const { token } = getStoredSession();
   const [type, setType] = useState("feedback");
   const [form, setForm] = useState({
     name: "",
@@ -69,7 +71,7 @@ const FeedbackPage = () => {
         </Link>
 
         <Link
-          to="/overview"
+          to={token ? "/overview" : "/"}
           className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-slate-700 shadow-sm transition hover:bg-white hover:text-black"
         >
           <ArrowLeft className="h-4 w-4" />

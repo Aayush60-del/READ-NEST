@@ -13,6 +13,12 @@ const userSchema = new mongoose.Schema(
       unique: true,
     },
 
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
     password: {
       type: String,
       required: false,

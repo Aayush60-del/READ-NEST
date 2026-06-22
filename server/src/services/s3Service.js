@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const USE_LOCAL = !process.env.AWS_S3_BUCKET_NAME;
+const LOCAL_UPLOAD_PORT = process.env.PORT || 5000;
 
 // Ensure public/uploads exists
 const ensureUploadsDir = (folderName) => {
@@ -31,9 +32,7 @@ const uploadFileToS3 = async (file, folderName) => {
             const filePath = path.join(dir, fileName);
             fs.writeFileSync(filePath, file.buffer);
             
-            // Hardcode localhost port for fallback since it's a dev environment.
-            // In a real app, you'd use req.protocol and req.get('host') but this is a service layer.
-            const url = `http://localhost:${process.env.PORT || 5050}/uploads/${key}`;
+            const url = `http://localhost:${LOCAL_UPLOAD_PORT}/uploads/${key}`;
             
             return {
                 url,
@@ -86,7 +85,7 @@ const deleteFileFromS3 = async (fileKey) => {
 const generateSignedUrl = async (bookFileKey) => {
     try {
         if (USE_LOCAL) {
-            return `http://localhost:${process.env.PORT || 5050}/uploads/${bookFileKey}`;
+            return `http://localhost:${LOCAL_UPLOAD_PORT}/uploads/${bookFileKey}`;
         }
 
         const command = new GetObjectCommand({
