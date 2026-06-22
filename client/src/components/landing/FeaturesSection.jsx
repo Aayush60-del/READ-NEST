@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { ArrowRight, BookOpenText, LibraryBig, TrendingUp } from "lucide-react";
 import AnimateIcon from "@/components/animate-ui/AnimateIcon";
@@ -32,7 +32,7 @@ const features = [
 ];
 
 const FeaturesSection = () => {
-  const [hovered, setHovered] = useState(2);
+  const [hovered, setHovered] = useState(null);
 
   return (
     <section data-gsap-section id="features" className="section-padding bg-white text-black">
@@ -60,7 +60,8 @@ const FeaturesSection = () => {
         <div data-gsap-stagger className="divide-y divide-slate-200 border-y border-slate-200">
           {features.map((f, i) => (
             <ScrollReveal key={f.title} delay={0.1 + i * 0.08}>
-              <motion.div data-gsap-item
+              <motion.div
+                data-gsap-item
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
                 className="group cursor-default"
@@ -74,7 +75,7 @@ const FeaturesSection = () => {
 
                   <div className="col-span-2 md:col-span-1">
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                      className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-300 ${
                         hovered === i
                           ? "bg-blue-100 text-blue-700"
                           : "bg-blue-50 text-slate-900"
@@ -112,6 +113,12 @@ const FeaturesSection = () => {
                   </div>
                 </div>
 
+                <div className="pb-6 pl-[calc(8.33%+16.66%+1rem)] md:hidden">
+                  <p className="max-w-xl text-sm leading-relaxed text-slate-500">
+                    {f.description}
+                  </p>
+                </div>
+
                 <AnimatePresence>
                   {hovered === i && (
                     <motion.div
@@ -122,7 +129,7 @@ const FeaturesSection = () => {
                         duration: 0.3,
                         ease: [0.25, 0.1, 0.25, 1],
                       }}
-                      className="overflow-hidden"
+                      className="hidden overflow-hidden md:block"
                     >
                       <div className="pb-8 pl-[calc(8.33%+16.66%+1rem)] md:pl-[calc(8.33%+8.33%+1rem)]">
                         <p className="max-w-xl text-sm md:text-base text-slate-500 leading-relaxed">
@@ -142,10 +149,3 @@ const FeaturesSection = () => {
 };
 
 export default FeaturesSection;
-
-
-
-
-
-
-

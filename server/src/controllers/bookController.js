@@ -7,6 +7,35 @@ const s3 = require("../config/s3");
 const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
 const path = require("path");
+const mongoose = require("mongoose");
+const BookMark = require("../models/BookMark");
+const Notes = require("../models/Notes");
+const Highlights = require("../models/Highlight");
+
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+const normalizeCategory = (category) => {
+    if (Array.isArray(category)) {
+        return category.map((item) => String(item).trim()).filter(Boolean);
+    }
+
+    return String(category || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+};
+
+const normalizeTotalPages = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.floor(parsed) : NaN;
+};
+
+const hasS3Config = Boolean(
+    process.env.AWS_REGION &&
+    process.env.AWS_ACCESS_KEY_ID &&
+    process.env.AWS_SECRET_ACCESS_KEY &&
+    process.env.AWS_S3_BUCKET_NAME
+);
 
 
 const createBook = async (req, res) => {
@@ -14,12 +43,19 @@ const createBook = async (req, res) => {
     let coverResult, pdfResult;
     try {
 
-
         const { title, author, description, category, totalPages } = req.body;
+        const normalizedCategory = normalizeCategory(category);
+        const normalizedTotalPages = normalizeTotalPages(totalPages);
 
-        if (!title || !author || !description || !category || !totalPages) {
+        if (!title || !author || !description || !normalizedCategory.length || !normalizedTotalPages) {
             return res.status(400).json({
                 message: "All fields are required"
+            });
+        }
+
+        if (normalizedTotalPages < 1) {
+            return res.status(400).json({
+                message: "Total pages must be at least 1"
             });
         }
 
@@ -43,13 +79,13 @@ const createBook = async (req, res) => {
             title,
             author,
             description,
-            category,
+            category: normalizedCategory,
             coverImage: coverResult.url,
             coverImageKey: coverResult.key,
             bookFileUrl: pdfResult.url,
             bookFileKey: pdfResult.key,
             uploadedBy: req.user.id,
-            totalPages,
+            totalPages: normalizedTotalPages,
 
         });
 
@@ -82,11 +118,6 @@ const getBooks = async (req, res) => {
     try {
 
         const Bookdata = await BookModel.find().lean();
-        if (!Bookdata || Bookdata.length === 0) {
-            return res.status(404).json({
-                message: "No books found"
-            });
-        }
 
         res.status(200).json({
             message: "Books retrieved successfully",
@@ -105,6 +136,12 @@ const getBookById = async (req, res) => {
     try {
 
         const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
 
         const Bookdata = await BookModel.findById(id);
 
@@ -130,6 +167,24 @@ const updateBook = async (req, res) => {
     try {
         const { id } = req.params;
         const updatedData = { ...req.body };
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
+
+        if (updatedData.category !== undefined) {
+            updatedData.category = normalizeCategory(updatedData.category);
+            if (!updatedData.category.length) {
+                return res.status(400).json({ message: "Category is required" });
+            }
+        }
+
+        if (updatedData.totalPages !== undefined) {
+            updatedData.totalPages = normalizeTotalPages(updatedData.totalPages);
+            if (!updatedData.totalPages || updatedData.totalPages < 1) {
+                return res.status(400).json({ message: "Total pages must be at least 1" });
+            }
+        }
 
         const existingBook = await BookModel.findById(id);
         if (!existingBook) {
@@ -181,6 +236,12 @@ const deleteBook = async (req, res) => {
 
         const { id } = req.params;
 
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
         const deletedBook = await BookModel.findByIdAndDelete(id);
 
         if (!deletedBook) {
@@ -195,6 +256,13 @@ const deleteBook = async (req, res) => {
         if (deletedBook.bookFileUrl) {
             await deleteFileFromS3(deletedBook.bookFileKey);
         }
+
+        await Promise.all([
+            ReadingProgressModel.deleteMany({ bookId: id }),
+            BookMark.deleteMany({ bookId: id }),
+            Notes.deleteMany({ bookId: id }),
+            Highlights.deleteMany({ bookId: id }),
+        ]);
 
         res.status(200).json({
             message: "Book deleted successfully",
@@ -355,6 +423,12 @@ const UserProgress = async (req, res) => {
         const { id: userId } = req.user;
         const bookId = req.params.id;
 
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
         const progressData = await ReadingProgressModel
             .findOne({
                 userId,
@@ -362,7 +436,7 @@ const UserProgress = async (req, res) => {
             })
             .populate("bookId", "title author coverImage totalPages");
 
-        if (!progressData) {
+        if (!progressData || !progressData.bookId) {
             // Return 200 with null data so the reader can show a clean "no progress yet" state
             return res.status(200).json({
                 message: "No progress yet",
@@ -401,6 +475,12 @@ const saveUserProgress = async (req, res) => {
         const bookId = req.params.id;
         const { currentPage } = req.body;
 
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
         const book = await BookModel.findById(bookId);
 
         if (!book) {
@@ -412,14 +492,21 @@ const saveUserProgress = async (req, res) => {
         // Fetch existing progress BEFORE updating so we can detect first completion
         const existingProgress = await ReadingProgressModel.findOne({ userId, bookId });
 
-        const normalizedPage = Math.min(Math.max(Number(currentPage) || 0, 0), book.totalPages);
+        if (!Number.isFinite(Number(currentPage))) {
+            return res.status(400).json({
+                message: "Current page must be a valid number"
+            });
+        }
+
+        const safeTotalPages = Math.max(1, Number(book.totalPages) || 1);
+        const normalizedPage = Math.min(Math.max(Number(currentPage) || 0, 0), safeTotalPages);
 
         const percentageCompleted = Math.round(
-            (normalizedPage / book.totalPages) * 100
+            (normalizedPage / safeTotalPages) * 100
         );
 
         const isCompleted =
-            normalizedPage >= book.totalPages;
+            normalizedPage >= safeTotalPages;
 
         await ReadingProgressModel.findOneAndUpdate(
             {
@@ -431,7 +518,7 @@ const saveUserProgress = async (req, res) => {
                     currentPage: normalizedPage,
                     percentageCompleted,
                     isCompleted,
-                    totalPages: book.totalPages
+                    totalPages: safeTotalPages
                 }
             },
             { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
@@ -518,6 +605,9 @@ const saveUserProgress = async (req, res) => {
 const PdfRead = async (req, res) => {
     try {
         const bookId = req.params.id;
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
         const bookData = await BookModel.findById(bookId);
 
         if (!bookData) {
@@ -559,6 +649,9 @@ const getPdfKeyFromBook = (bookData) => {
 const streamBookPdf = async (req, res) => {
     try {
         const bookId = req.params.id;
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
         const bookData = await BookModel.findById(bookId);
 
         if (!bookData) {
@@ -575,7 +668,7 @@ const streamBookPdf = async (req, res) => {
         res.setHeader("Accept-Ranges", "bytes");
 
         // Local upload fallback
-        if (!process.env.AWS_S3_BUCKET_NAME) {
+        if (!hasS3Config) {
             const localPath = path.join(__dirname, "../../public/uploads", key);
 
             if (key && fs.existsSync(localPath)) {

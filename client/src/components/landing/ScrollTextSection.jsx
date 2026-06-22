@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -14,12 +14,26 @@ const ScrollTextSection = () => {
 
     if (!section || !words?.length) return;
 
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
     const ctx = gsap.context(() => {
       gsap.set(words, {
         color: "rgba(45, 42, 38, 0.10)",
-        opacity: 0.25,
-        y: 18,
+        opacity: prefersReducedMotion || isMobile ? 1 : 0.25,
+        y: prefersReducedMotion || isMobile ? 0 : 18,
       });
+
+      if (prefersReducedMotion || isMobile) {
+        gsap.set(words, {
+          color: "#2d2a26",
+          opacity: 1,
+          y: 0,
+        });
+        return;
+      }
 
       gsap.to(words, {
         color: "#2d2a26",
@@ -53,10 +67,10 @@ const ScrollTextSection = () => {
     <section
       ref={sectionRef}
       id="about-text"
-      className="relative h-screen overflow-hidden bg-[#f6f4ef] border-y border-slate-200"
+      className="relative min-h-[70vh] overflow-hidden bg-[#f6f4ef] border-y border-slate-200 md:h-screen"
     >
-      <div className="h-full w-full px-6 md:px-12 lg:px-20 flex items-center">
-        <div className="max-w-6xl mx-auto w-full">
+      <div className="flex h-full w-full items-center px-6 md:px-12 lg:px-20">
+        <div className="mx-auto w-full max-w-6xl">
           <p className="mb-8 text-xs md:text-sm uppercase tracking-[0.38em] text-blue-700 font-black">
             (About)
           </p>
@@ -89,4 +103,3 @@ const ScrollTextSection = () => {
 };
 
 export default ScrollTextSection;
-

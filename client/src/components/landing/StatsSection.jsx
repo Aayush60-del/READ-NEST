@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { BookOpenCheck, Flame, Rows3 } from 'lucide-react';
 import AnimateIcon from '@/components/animate-ui/AnimateIcon';
@@ -59,7 +59,7 @@ const StatsSection = () => {
                 <motion.div
                   whileHover={{ scale: 1.06 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter text-black-400 cursor-default"
+                  className="cursor-default text-5xl font-black tracking-tighter text-slate-950 md:text-6xl lg:text-7xl"
                   style={{ fontFamily: 'var(--font-heading)' }}
                 >
                   <AnimatedCounter target={s.value} suffix={s.suffix} duration={2000} />
@@ -74,5 +74,3 @@ const StatsSection = () => {
 };
 
 export default StatsSection;
-
-

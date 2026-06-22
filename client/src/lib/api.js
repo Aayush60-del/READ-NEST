@@ -1,6 +1,8 @@
 ﻿import axios from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const rawApiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, "");
 
 export const getStoredSession = () => {
   try {
@@ -42,7 +44,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       clearSession();
-      if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+      if (
+        window.location.pathname !== '/auth' &&
+        window.location.pathname !== '/' &&
+        window.location.pathname !== '/oauth-success'
+      ) {
         window.location.href = '/auth';
       }
     }
@@ -96,6 +102,18 @@ export const ENDPOINTS = {
     SETTINGS: '/api/notifications/settings',
     TEST: '/api/test-notification'
   }
+};
+
+export const fetchCurrentUser = async () => {
+  const payload = await api.get(ENDPOINTS.AUTH.PROFILE);
+  const nextUser = payload?.user || null;
+
+  if (nextUser) {
+    const { token } = getStoredSession();
+    saveSession({ token, user: nextUser });
+  }
+
+  return nextUser;
 };
 
 export default api;

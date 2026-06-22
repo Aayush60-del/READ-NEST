@@ -1,0 +1,13 @@
+
+> client@0.0.0 dev
+> vite --host 127.0.0.1 --port 4173
+
+[2m10:20:03 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+Port 4173 is in use, trying another one...
+
+  [32m[1mVITE[22m v8.0.16[39m  [2mready in [0m[1m921[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4174[22m/[39m
+[2m10:38:18 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/Navbar.jsx[22m
+[2m10:38:18 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/landing/CTASection.jsx[22m
+[2m10:38:18 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/landing/FooterSection.jsx[22m

@@ -33,20 +33,21 @@ const updateProfile = async (req, res) => {
     try {
         const { id } = req.user;
         const { name, email } = req.body;
+        const normalizedEmail = String(email).trim().toLowerCase();
 
         if (!name || !email) {
             return res.status(400).json({ message: "Name and email are required" });
         }
 
         // Check if email is taken by another user
-        const existing = await User.findOne({ email, _id: { $ne: id } });
+        const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: id } });
         if (existing) {
             return res.status(400).json({ message: "Email is already in use by another account" });
         }
 
         const user = await User.findByIdAndUpdate(
             id,
-            { name: name.trim(), email: email.trim() },
+            { name: name.trim(), email: normalizedEmail },
             { returnDocument: 'after' }
         ).select("-password");
 

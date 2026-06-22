@@ -1,13 +1,40 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
-import api, { ENDPOINTS, getStoredSession } from "../lib/api";
+import api, { ENDPOINTS, fetchCurrentUser, getStoredSession } from "../lib/api";
 import { requestForToken, onMessageListener } from "../config/firebase";
 import { NotificationContext } from "./NotificationContextBase";
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { user } = getStoredSession();
-  const userId = user?.id || user?._id;
+  const { token, user } = getStoredSession();
+  const [sessionUser, setSessionUser] = useState(user);
+  const userId = sessionUser?.id || sessionUser?._id;
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!token || sessionUser) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    fetchCurrentUser()
+      .then((nextUser) => {
+        if (isActive) {
+          setSessionUser(nextUser);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setSessionUser(null);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, sessionUser]);
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;

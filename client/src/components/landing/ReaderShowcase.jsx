@@ -1,4 +1,4 @@
-﻿import { motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Bookmark, BookmarkPlus, ChevronRight, Gauge, Moon, NotebookPen, StickyNote, SunMedium, Type } from 'lucide-react';
 import AnimateIcon from '@/components/animate-ui/AnimateIcon';
 import ScrollReveal from '../ScrollReveal';
@@ -24,7 +24,8 @@ const ReaderShowcase = () => {
 
         <ScrollReveal delay={0.1}>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-16" style={{ fontFamily: 'var(--font-heading)' }}>
-            Your reading experience,<br />
+            Your reading experience,
+            <br />
             <span className="text-gradient">perfected.</span>
           </h2>
         </ScrollReveal>
@@ -94,8 +95,8 @@ const ReaderShowcase = () => {
                     </AnimateIcon>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-black-400 hover:text-blue-600 text-sm">{f.label}</h4>
-                    <p className="text-xl text-[var(--color-text-muted)] mt-0.5">{f.desc}</p>
+                    <h4 className="text-sm font-semibold text-slate-950 transition-colors group-hover:text-blue-600">{f.label}</h4>
+                    <p className="mt-0.5 text-sm text-[var(--color-text-muted)] md:text-base">{f.desc}</p>
                   </div>
                 </motion.div>
               </ScrollReveal>
@@ -108,5 +109,3 @@ const ReaderShowcase = () => {
 };
 
 export default ReaderShowcase;
-
-

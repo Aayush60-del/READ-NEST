@@ -1,12 +1,12 @@
 ﻿import ReaderCharacterMotion from "@/components/visuals/ReaderCharacterMotion";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import api, { ENDPOINTS, clearSession, saveSession } from '@/lib/api';
+import api, { API_BASE_URL, ENDPOINTS, clearSession, fetchCurrentUser, getStoredSession, saveSession } from '@/lib/api';
 import { ArrowLeft, BookOpenCheck, ShieldCheck, User } from 'lucide-react';
 import AnimateIcon from '@/components/animate-ui/AnimateIcon';
 
@@ -22,9 +22,6 @@ const AnimatedBackground = () => (
   </div>
 );
 
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [loginMode, setLoginMode] = useState('user'); // 'user' | 'admin'
@@ -33,6 +30,39 @@ const AuthPage = () => {
   const [forgotMessage, setForgotMessage] = useState('');
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let isActive = true;
+    const { token, user } = getStoredSession();
+
+    if (!token) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const redirectAuthenticatedUser = (nextUser) => {
+      if (!isActive || !nextUser) return;
+      navigate(nextUser.role === 'admin' ? '/admin' : '/overview', { replace: true });
+    };
+
+    if (user) {
+      redirectAuthenticatedUser(user);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    fetchCurrentUser()
+      .then(redirectAuthenticatedUser)
+      .catch(() => {
+        clearSession();
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

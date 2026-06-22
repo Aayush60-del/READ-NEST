@@ -93,10 +93,11 @@ const ReadingStatsPage = () => {
     const streak = streakData?.streak || 0;
     const readDates = streakData?.readDates || [];
     const readSet = getReadDateSet(readDates);
-    const heatmap = buildReadingHeatmap(readDates, 5).flat().slice(-30);
+    const heatmapWeeks = buildReadingHeatmap(readDates, 5);
+    const heatmap = heatmapWeeks.flat().slice(-30);
 
     const heatmapRangeLabel = formatHeatmapRangeLabel(heatmap);
-    const weeklyActivity = Array.from({ length: 5 }, (_, index) => heatmap.slice(index * 6, index * 6 + 6).filter((day) => day.read).length);
+    const weeklyActivity = heatmapWeeks.map((week) => week.filter((day) => day.read).length);
     const activeDays = readSet.size;
     const bestStreak = Math.max(streak, getBestStreakFromDates(readDates));
     const habitScore = Math.min(100, Math.round((activeDays / 30) * 100));
@@ -318,7 +319,7 @@ const ReadingStatsPage = () => {
                                         <p className="text-[10px] font-bold tracking-widest uppercase text-[#c97b6b] mb-2">Weekly rhythm</p>
                                         <h2 className="text-2xl font-serif text-black dark:text-white">Activity by week</h2>
                                     </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Last 10 weeks</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Last 5 weeks</span>
                                 </div>
                                 <div className="flex items-end gap-3 h-44">
                                     {weeklyActivity.map((count, index) => (

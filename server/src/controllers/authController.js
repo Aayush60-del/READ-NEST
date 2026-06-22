@@ -7,6 +7,7 @@ const serializeUser = (user) => ({
   name: user.name,
   email: user.email,
   role: user.role,
+  createdAt: user.createdAt,
 });
 
 const userToken = (userId) => {
@@ -31,7 +32,9 @@ const signup = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email : email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return res.status(400).json({
@@ -43,7 +46,7 @@ const signup = async (req, res) => {
 
     const user = await User.create({
       name: name.trim(),
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
@@ -69,7 +72,9 @@ const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({

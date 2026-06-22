@@ -1,11 +1,16 @@
-﻿import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { BookOpen, Library, Sparkles } from "lucide-react";
 import AnimateIcon from "@/components/animate-ui/AnimateIcon";
 
 const HeroSection = () => {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#f6f4ef] text-slate-950">
+    <section
+      id="hero"
+      className="relative min-h-screen overflow-hidden bg-[#f6f4ef] text-slate-950"
+    >
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[#f6f4ef]" />
 
@@ -84,14 +89,18 @@ const HeroSection = () => {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 70, scale: 0.94 }}
+          initial={{ opacity: 0, x: 36, scale: 0.96 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
         >
           <motion.div
-            animate={{ y: [0, -14, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            animate={prefersReducedMotion ? undefined : { y: [0, -14, 0] }}
+            transition={
+              prefersReducedMotion
+                ? undefined
+                : { duration: 5, repeat: Infinity, ease: "easeInOut" }
+            }
             className="relative mx-auto max-w-[460px] rounded-[2.2rem] border border-slate-200 bg-white/80 p-5 shadow-[0_35px_110px_rgba(15,23,42,0.12)] backdrop-blur-xl"
           >
             <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-blue-100 blur-2xl" />
@@ -143,5 +152,3 @@ const HeroSection = () => {
 };
 
 export default HeroSection;
-
-

@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpen } from "lucide-react";
 
@@ -8,19 +8,27 @@ const CTASection = () => {
 
     if (!target) return;
 
+    const targetTop = Math.max(
+      target.getBoundingClientRect().top + window.scrollY - 80,
+      0
+    );
+
     if (window.lenis) {
-      window.lenis.scrollTo(target, {
-        offset: -80,
-        duration: 1.1,
-      });
+      window.lenis.scrollTo(targetTop, { duration: 1.1 });
       return;
     }
 
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.scrollTo({
+      top: targetTop,
+      behavior: "smooth",
+    });
   };
 
   return (
-    <section className="relative overflow-hidden bg-white text-slate-950 px-6 py-28 md:px-10 md:py-36">
+    <section
+      id="cta"
+      className="relative overflow-hidden bg-white px-6 py-28 text-slate-950 md:px-10 md:py-36"
+    >
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-white" />
         <div className="absolute left-1/2 top-0 h-px w-px bg-blue-200 shadow-[0_0_120px_80px_rgba(37,99,235,0.08)]" />
@@ -75,4 +83,3 @@ const CTASection = () => {
 };
 
 export default CTASection;
-

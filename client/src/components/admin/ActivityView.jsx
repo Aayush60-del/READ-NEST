@@ -46,6 +46,12 @@ const ActivityView = () => {
     };
 
     fetchActivity();
+    const handleBooksUpdated = () => {
+      fetchActivity();
+    };
+
+    window.addEventListener('readnest:books-updated', handleBooksUpdated);
+    return () => window.removeEventListener('readnest:books-updated', handleBooksUpdated);
   }, []);
 
   if (loading) {

@@ -4,9 +4,10 @@ const path = require("path");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const session = require("express-session");
+const multer = require("multer");
 const passport = require("./config/passport");
 
-
+const normalizeOrigin = (value) => String(value || "").trim().replace(/\/+$/, "");
 
 const requiredEnvVars = ["JWT_SECRET", "MONGO_URI"];
 for (const envVar of requiredEnvVars) {
@@ -24,6 +25,10 @@ if (!sessionSecret) {
 }
 
 const app = express();
+const configuredOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+].filter(Boolean).flatMap((value) => String(value).split(",")).map(normalizeOrigin).filter(Boolean);
 
 // Required when running behind Render proxy for rate limiting
 app.set("trust proxy", 1);
@@ -34,7 +39,18 @@ app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow 
 
 // CORS Configuration
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (configuredOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   exposedHeaders: ["Accept-Ranges", "Content-Length", "Content-Range", "Content-Type"],
 }));
@@ -113,6 +129,33 @@ app.get("/api/health", (req, res) => {
     success: true,
     status: "OK",
     message: "ReadNest backend is healthy"
+  });
+});
+
+app.use((err, req, res, next) => {
+  if (!err) {
+    return next();
+  }
+
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Uploaded file is too large. Cover images must stay under 10MB and book files under 50MB."
+        : err.message;
+    return res.status(400).json({ message });
+  }
+
+  if (typeof err.message === "string" && (
+    err.message.includes("upload only images") ||
+    err.message.includes("upload only PDF") ||
+    err.message.includes("upload only PDF or EPUB")
+  )) {
+    return res.status(400).json({ message: err.message });
+  }
+
+  console.error("[Express Error]", err);
+  return res.status(500).json({
+    message: err.message || "Unexpected server error",
   });
 });
 

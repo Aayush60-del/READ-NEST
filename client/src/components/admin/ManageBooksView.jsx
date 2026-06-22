@@ -27,6 +27,12 @@ const ManageBooksView = ({ searchQuery = '' }) => {
 
   useEffect(() => {
     fetchBooks();
+    const handleBooksUpdated = () => {
+      fetchBooks();
+    };
+
+    window.addEventListener('readnest:books-updated', handleBooksUpdated);
+    return () => window.removeEventListener('readnest:books-updated', handleBooksUpdated);
   }, []);
 
   const handleDelete = async (id) => {
@@ -36,6 +42,7 @@ const ManageBooksView = ({ searchQuery = '' }) => {
     try {
       await api.delete(ENDPOINTS.BOOKS.DETAIL(id));
       setBooks(books.filter(b => b._id !== id));
+      window.dispatchEvent(new CustomEvent('readnest:books-updated'));
     } catch (err) {
       setError(err.message || 'Failed to delete book');
     } finally {

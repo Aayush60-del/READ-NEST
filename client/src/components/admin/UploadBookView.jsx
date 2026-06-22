@@ -1,6 +1,9 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Upload, Image as ImageIcon, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import api, { ENDPOINTS } from '@/lib/api';
+
+const MAX_COVER_SIZE = 10 * 1024 * 1024;
+const MAX_BOOK_SIZE = 50 * 1024 * 1024;
 
 const UploadBookView = () => {
   const [formData, setFormData] = useState({
@@ -10,7 +13,7 @@ const UploadBookView = () => {
     category: '',
     totalPages: ''
   });
-  
+
   const [coverImage, setCoverImage] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [status, setStatus] = useState({ loading: false, error: null, success: false });
@@ -20,39 +23,85 @@ const UploadBookView = () => {
   };
 
   const handleFileChange = (e) => {
-    if (e.target.name === 'coverImage') setCoverImage(e.target.files[0]);
-    if (e.target.name === 'pdfFile') setPdfFile(e.target.files[0]);
+    const file = e.target.files?.[0] || null;
+
+    if (e.target.name === 'coverImage') {
+      if (file && !file.type.startsWith('image/')) {
+        setStatus({ loading: false, error: 'Cover image must be an image file.', success: false });
+        e.target.value = '';
+        return;
+      }
+
+      if (file && file.size > MAX_COVER_SIZE) {
+        setStatus({ loading: false, error: 'Cover image must be smaller than 10MB.', success: false });
+        e.target.value = '';
+        return;
+      }
+
+      setCoverImage(file);
+    }
+
+    if (e.target.name === 'pdfFile') {
+      const allowedBookTypes = ['application/pdf', 'application/epub+zip'];
+      if (file && !allowedBookTypes.includes(file.type)) {
+        setStatus({ loading: false, error: 'Book file must be a PDF or EPUB.', success: false });
+        e.target.value = '';
+        return;
+      }
+
+      if (file && file.size > MAX_BOOK_SIZE) {
+        setStatus({ loading: false, error: 'Book file must be smaller than 50MB.', success: false });
+        e.target.value = '';
+        return;
+      }
+
+      setPdfFile(file);
+    }
+
+    setStatus((prev) => ({ ...prev, error: null }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: false });
 
+    const normalizedTotalPages = Number(formData.totalPages);
+
+    if (!formData.title.trim() || !formData.author.trim() || !formData.description.trim() || !formData.category.trim()) {
+      setStatus({ loading: false, error: 'Title, author, category, and description are required.', success: false });
+      return;
+    }
+
+    if (!Number.isFinite(normalizedTotalPages) || normalizedTotalPages < 1) {
+      setStatus({ loading: false, error: 'Total pages must be at least 1.', success: false });
+      return;
+    }
+
     if (!coverImage || !pdfFile) {
-      setStatus({ loading: false, error: 'Both cover image and PDF file are required.', success: false });
+      setStatus({ loading: false, error: 'Both cover image and PDF/EPUB file are required.', success: false });
       return;
     }
 
     try {
       const data = new FormData();
-      data.append('title', formData.title);
-      data.append('author', formData.author);
-      data.append('description', formData.description);
-      data.append('category', formData.category);
-      data.append('totalPages', formData.totalPages);
+      data.append('title', formData.title.trim());
+      data.append('author', formData.author.trim());
+      data.append('description', formData.description.trim());
+      data.append('category', formData.category.trim());
+      data.append('totalPages', String(normalizedTotalPages));
       data.append('coverImage', coverImage);
       data.append('pdfFile', pdfFile);
 
       await api.post(ENDPOINTS.BOOKS.LIST, data);
-      
+
       setStatus({ loading: false, error: null, success: true });
       setFormData({ title: '', author: '', description: '', category: '', totalPages: '' });
       setCoverImage(null);
       setPdfFile(null);
-      // Reset file inputs visually
       document.getElementById('coverImage').value = '';
       document.getElementById('pdfFile').value = '';
-      
+      window.dispatchEvent(new CustomEvent('readnest:books-updated'));
+
       setTimeout(() => setStatus(prev => ({ ...prev, success: false })), 4000);
     } catch (err) {
       setStatus({ loading: false, error: err.message || 'Failed to upload book.', success: false });
@@ -84,7 +133,6 @@ const UploadBookView = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column - Metadata */}
           <div className="space-y-4">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 mb-1.5">Book Title</label>
@@ -98,7 +146,7 @@ const UploadBookView = () => {
                 className="w-full bg-white dark:bg-[#0f1419] border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-black dark:text-white focus:outline-none focus:border-[#c97b6b] transition-colors"
               />
             </div>
-            
+
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 mb-1.5">Author</label>
               <input
@@ -154,7 +202,6 @@ const UploadBookView = () => {
             </div>
           </div>
 
-          {/* Right Column - Files */}
           <div className="space-y-6">
             <div className="p-6 border border-dashed border-black/20 dark:border-white/20 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex items-center gap-3 mb-4">
@@ -163,7 +210,7 @@ const UploadBookView = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-black dark:text-white">Cover Image</h4>
-                  <p className="text-[11px] text-black/50 dark:text-white/50">High quality JPG or PNG</p>
+                  <p className="text-[11px] text-black/50 dark:text-white/50">High quality JPG or PNG under 10MB</p>
                 </div>
               </div>
               <input
@@ -183,15 +230,15 @@ const UploadBookView = () => {
                   <FileText className="w-5 h-5 text-[#c97b6b]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-black dark:text-white">Book File (PDF)</h4>
-                  <p className="text-[11px] text-black/50 dark:text-white/50">The actual book content</p>
+                  <h4 className="text-sm font-bold text-black dark:text-white">Book File</h4>
+                  <p className="text-[11px] text-black/50 dark:text-white/50">Upload a PDF or EPUB file under 50MB</p>
                 </div>
               </div>
               <input
                 type="file"
                 id="pdfFile"
                 name="pdfFile"
-                accept="application/pdf"
+                accept="application/pdf,application/epub+zip,.epub"
                 required
                 onChange={handleFileChange}
                 className="w-full text-sm text-black/60 dark:text-white/60 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:tracking-widest file:uppercase file:bg-[#c97b6b]/10 file:text-[#c97b6b] hover:file:bg-[#c97b6b]/20 transition-all"
@@ -219,4 +266,3 @@ const UploadBookView = () => {
 };
 
 export default UploadBookView;
-

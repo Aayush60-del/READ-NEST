@@ -8,6 +8,8 @@ const { login, signup } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 const { getProfile, updateProfile, changePassword, deleteAccount } = require("../controllers/userController");
 
+const clientUrl = String(process.env.CLIENT_URL || "http://localhost:5173").replace(/\/+$/, "");
+
 router.post("/login", login);
 router.post("/signup", signup);
 router.get("/profile", protect, getProfile);
@@ -22,7 +24,7 @@ router.get(
     "/google/callback",
     passport.authenticate("google", {
         session: false,
-        failureRedirect: "/login"
+        failureRedirect: `${clientUrl}/auth`
     }),
     (req, res) => {
         try {
@@ -31,12 +33,12 @@ router.get(
                 : null;
 
             if (!token) {
-                return res.redirect(`${process.env.CLIENT_URL}/auth`);
+                return res.redirect(`${clientUrl}/auth`);
             }
 
-            return res.redirect(`${process.env.CLIENT_URL}/oauth-success?token=${token}`);
+            return res.redirect(`${clientUrl}/oauth-success?token=${token}`);
         } catch (e) {
-            return res.redirect(`${process.env.CLIENT_URL}/auth`);
+            return res.redirect(`${clientUrl}/auth`);
         }
     }
 );
@@ -54,7 +56,7 @@ router.get(
     "/github/callback",
     passport.authenticate("github", {
         session: false,
-        failureRedirect: "/login"
+        failureRedirect: `${clientUrl}/auth`
     }),
     (req, res) => {
         try {
@@ -63,12 +65,12 @@ router.get(
                 : null;
 
             if (!token) {
-                return res.redirect(`${process.env.CLIENT_URL}/auth`);
+                return res.redirect(`${clientUrl}/auth`);
             }
 
-            return res.redirect(`${process.env.CLIENT_URL}/oauth-success?token=${token}`);
+            return res.redirect(`${clientUrl}/oauth-success?token=${token}`);
         } catch (e) {
-            return res.redirect(`${process.env.CLIENT_URL}/auth`);
+            return res.redirect(`${clientUrl}/auth`);
         }
     }
 );
