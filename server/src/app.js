@@ -17,6 +17,9 @@ for (const envVar of requiredEnvVars) {
 
 const app = express();
 
+// Required when running behind Render proxy for rate limiting
+app.set("trust proxy", 1);
+
 // Security Middlewares
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow images/pdfs to be loaded cross-origin if needed
@@ -105,6 +108,7 @@ app.get("/api/health", (req, res) => {
 });
 
 module.exports = app;
+
 
 
 
