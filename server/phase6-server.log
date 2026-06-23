@@ -1,0 +1,8 @@
+
+> server@1.0.0 start
+> node server.js
+
+◇ injected env (13) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[Cron] Daily reading reminder jobs scheduled (12 PM, 6 PM, 9 PM).
+MongoDB connected
+Server is running on port 5000
