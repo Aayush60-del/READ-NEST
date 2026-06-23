@@ -2,6 +2,7 @@
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import MobileLandingMotion from "../components/landing/MobileLandingMotion";
 
 import Navbar from "../components/Navbar";
 import CustomCursor from "../components/CustomCursor";
@@ -63,6 +64,7 @@ const LandingPage = () => {
   return (
     <div className="relative landing-page bg-[#f6f4ef] text-slate-950 overflow-x-hidden">
       <CustomCursor />
+          <MobileLandingMotion />
       <Navbar />
 
       <HeroSection />

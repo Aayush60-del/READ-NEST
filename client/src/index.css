@@ -676,3 +676,88 @@ label {
 }
 
 /* READNEST RESPONSIVE FIX END */
+/* READNEST MOBILE LANDING MOTION START */
+
+@media (max-width: 768px) {
+  .landing-page {
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .landing-page [data-mobile-motion="true"] {
+    opacity: 0;
+    transform: translate3d(0, 34px, 0) scale(0.985);
+    filter: blur(7px);
+    transition:
+      opacity 820ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 820ms cubic-bezier(0.16, 1, 0.3, 1),
+      filter 820ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--rn-mobile-delay, 0ms);
+    will-change: transform, opacity, filter;
+  }
+
+  .landing-page [data-mobile-motion="true"].rn-mobile-motion-in {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+
+  .landing-page section {
+    scroll-margin-top: 84px;
+  }
+
+  .landing-page img[src*="readnest-character"],
+  .landing-page img[src*="Read-Nest"],
+  .landing-page img[src*="readnest"] {
+    transform: translateY(var(--rn-mobile-scroll, 0px));
+    animation: rnMobileReaderFloat 5.5s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .landing-page a,
+  .landing-page button {
+    transition:
+      transform 240ms ease,
+      box-shadow 240ms ease,
+      background-color 240ms ease,
+      border-color 240ms ease;
+  }
+
+  .landing-page a:active,
+  .landing-page button:active {
+    transform: scale(0.96);
+  }
+
+  .landing-page [class*="rounded"] {
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+  }
+
+  @keyframes rnMobileReaderFloat {
+    0%, 100% {
+      translate: 0 0;
+    }
+
+    50% {
+      translate: 0 -10px;
+    }
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .landing-page [data-mobile-motion="true"] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+
+  .landing-page img[src*="readnest-character"],
+  .landing-page img[src*="Read-Nest"],
+  .landing-page img[src*="readnest"] {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* READNEST MOBILE LANDING MOTION END */
