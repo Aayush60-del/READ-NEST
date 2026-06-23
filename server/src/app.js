@@ -18,10 +18,11 @@ for (const envVar of requiredEnvVars) {
 
 const sessionSecret =
   process.env.SESSION_SECRET ||
+  process.env.JWT_SECRET ||
   (process.env.NODE_ENV !== "production" ? "readnest-local-session-secret" : null);
 
 if (!sessionSecret) {
-  throw new Error("SESSION_SECRET is required in production.");
+  throw new Error("SESSION_SECRET or JWT_SECRET is required in production.");
 }
 
 const app = express();
