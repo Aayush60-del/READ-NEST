@@ -761,3 +761,103 @@ label {
 }
 
 /* READNEST MOBILE LANDING MOTION END */
+/* READNEST GENRE HORIZONTAL SCROLL START */
+.rn-genre-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.rn-genre-scroll::-webkit-scrollbar {
+  display: none;
+}
+/* READNEST GENRE HORIZONTAL SCROLL END */
+/* READNEST MOBILE NAV FOOTER TEXT FIX START */
+
+/* Stop landing nav/footer text from breaking like ME NU / TWITTE R */
+.landing-page nav a,
+.landing-page nav button,
+.landing-page nav span,
+.landing-page footer a,
+.landing-page footer button,
+.landing-page footer span,
+.landing-page footer p {
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+  white-space: nowrap !important;
+}
+
+/* Mobile landing navbar cleanup */
+@media (max-width: 768px) {
+  .landing-page nav {
+    min-height: 72px !important;
+  }
+
+  .landing-page nav > div {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    gap: 0.65rem !important;
+  }
+
+  .landing-page nav a,
+  .landing-page nav button {
+    font-size: 0.72rem !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1 !important;
+    min-width: max-content !important;
+  }
+
+  .landing-page nav [class*="tracking"] {
+    letter-spacing: 0.12em !important;
+  }
+
+  /* Keep logo readable */
+  .landing-page nav .font-black,
+  .landing-page nav .font-bold {
+    white-space: nowrap !important;
+  }
+
+  /* Footer should not stretch vertically too much on mobile */
+  .landing-page footer {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+
+  .landing-page footer h2,
+  .landing-page footer h3,
+  .landing-page footer p {
+    text-align: center !important;
+  }
+
+  .landing-page footer a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: max-content !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.18em !important;
+  }
+
+  .landing-page footer [class*="grid"] {
+    gap: 1.25rem !important;
+  }
+
+  .landing-page footer [class*="tracking"] {
+    letter-spacing: 0.18em !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .landing-page nav a,
+  .landing-page nav button {
+    font-size: 0.68rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .landing-page footer a {
+    font-size: 0.72rem !important;
+    letter-spacing: 0.14em !important;
+  }
+}
+
+/* READNEST MOBILE NAV FOOTER TEXT FIX END */
