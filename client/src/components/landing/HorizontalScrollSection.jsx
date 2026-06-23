@@ -1,122 +1,182 @@
-import { useRef, useEffect, useState } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, BookOpen, Heart, Rocket, Search, Sparkles, UserRound } from 'lucide-react';
-import AnimateIcon from '@/components/animate-ui/AnimateIcon';
-
-gsap.registerPlugin(ScrollTrigger);
+﻿import { useRef } from "react";
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  Heart,
+  Rocket,
+  Sparkles,
+} from "lucide-react";
 
 const genres = [
-  { id: 1, title: 'Science Fiction', color: 'from-blue-500/20 to-purple-600/20', Icon: Rocket, animation: 'float', image: '/images/Science.webp' },
-  { id: 2, title: 'Fantasy', color: 'from-emerald-500/20 to-teal-600/20', Icon: Sparkles, animation: 'spark', image: '/images/Fantasy.webp' },
-  { id: 3, title: 'Mystery', color: 'from-slate-500/20 to-gray-600/20', Icon: Search, animation: 'pulse', image: '/images/NonFiction.webp' },
-  { id: 4, title: 'Romance', color: 'from-rose-500/20 to-pink-600/20', Icon: Heart, animation: 'pulse', image: '/images/Romance.jpg' },
-  { id: 5, title: 'Non-Fiction', color: 'from-amber-500/20 to-orange-600/20', Icon: BookOpen, animation: 'draw', image: '/images/NonFiction.webp' },
-  { id: 6, title: 'Biography', color: 'from-indigo-500/20 to-cyan-600/20', Icon: UserRound, animation: 'float', image: '/images/Biography.jpg' },
+  {
+    title: "Science Fiction",
+    count: "Over 1,000+ books",
+    image: "/images/Science.webp",
+    icon: Rocket,
+  },
+  {
+    title: "Fantasy",
+    count: "Over 1,200+ books",
+    image: "/images/Fantasy.webp",
+    icon: Sparkles,
+  },
+  {
+    title: "Romance",
+    count: "Over 900+ books",
+    image: "/images/Romance.jpg",
+    icon: Heart,
+  },
+  {
+    title: "Biography",
+    count: "Over 700+ books",
+    image: "/images/Biography.jpg",
+    icon: BookOpen,
+  },
+  {
+    title: "Non Fiction",
+    count: "Over 850+ books",
+    image: "/images/NonFiction.webp",
+    icon: Compass,
+  },
 ];
 
 const HorizontalScrollSection = () => {
-  const sectionRef = useRef(null);
-  const scrollWrapperRef = useRef(null);
-  const [enablePinnedScroll, setEnablePinnedScroll] = useState(false);
+  const scrollRef = useRef(null);
 
-  useEffect(() => {
-    const updateMode = () => {
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-      setEnablePinnedScroll(isDesktop && !prefersReducedMotion);
-    };
+  const scrollByAmount = (direction) => {
+    const el = scrollRef.current;
+    if (!el) return;
 
-    updateMode();
-    window.addEventListener('resize', updateMode);
-
-    return () => window.removeEventListener('resize', updateMode);
-  }, []);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    const scrollWrapper = scrollWrapperRef.current;
-    if (!section || !scrollWrapper || !enablePinnedScroll) return;
-
-    const getScrollAmount = () => {
-      const scrollWidth = scrollWrapper.scrollWidth;
-      return -(scrollWidth - window.innerWidth);
-    };
-
-    const tween = gsap.to(scrollWrapper, {
-      x: getScrollAmount,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: section,
-        start: 'top top',
-        end: () => `+=${getScrollAmount() * -1}`,
-        pin: true,
-        scrub: 1,
-        invalidateOnRefresh: true,
-      },
+    el.scrollBy({
+      left: direction * Math.min(window.innerWidth * 0.85, 430),
+      behavior: "smooth",
     });
-
-    return () => tween.kill();
-  }, [enablePinnedScroll]);
+  };
 
   return (
     <section
-      ref={sectionRef}
       id="genres"
-      className={`relative flex flex-col justify-center border-y border-white/5 bg-[#0a0a0f] ${
-        enablePinnedScroll ? 'h-screen overflow-hidden' : 'overflow-x-auto py-32'
-      }`}
+      className="relative overflow-hidden bg-[#09090d] py-20 sm:py-24 lg:py-32 text-white"
     >
-      <div className="absolute top-20 left-6 md:left-16 z-10">
-        <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-primary)]" style={{ fontFamily: 'var(--font-accent)' }}>
-          Genres
-        </p>
-        <h2 className="text-4xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
-          Explore vast worlds.
-        </h2>
-      </div>
+      <div className="relative z-10">
+        <div className="mb-10 px-6 sm:px-10 lg:px-16">
+          <div className="mx-auto flex max-w-7xl items-end justify-between gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <p className="mb-5 text-xs font-black uppercase tracking-[0.35em] text-[#c97b6b]">
+                Genres
+              </p>
 
-      <div ref={scrollWrapperRef} className="mt-20 flex w-max gap-8 px-6 pb-4 md:px-16">
-        {genres.map((g) => (
-          <div
-            key={g.id}
-            className={`relative flex h-[350px] w-[280px] flex-col justify-end overflow-hidden rounded-3xl border border-white/10 p-8 backdrop-blur-md group md:h-[450px] md:w-[400px] ${
-              g.image ? 'bg-black' : `bg-gradient-to-br ${g.color}`
-            }`}
-          >
-            {g.image && (
-              <>
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-500 group-hover:opacity-60"
-                  style={{ backgroundImage: `url('${g.image}')` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent opacity-90" />
-              </>
-            )}
+              <h2 className="max-w-4xl text-5xl font-black leading-[0.92] tracking-[-0.07em] sm:text-6xl lg:text-8xl">
+                Explore vast worlds.
+              </h2>
+            </motion.div>
 
-            {!g.image && (
-              <g.Icon className="absolute -right-8 -bottom-8 h-60 w-60 text-white/5 transition-colors group-hover:text-white/10" />
-            )}
+            <div className="hidden items-center gap-3 sm:flex">
+              <button
+                type="button"
+                onClick={() => scrollByAmount(-1)}
+                className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 backdrop-blur-xl transition hover:bg-white hover:text-black"
+                aria-label="Scroll genres left"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
 
-            <div className="relative z-10">
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md transition-transform group-hover:scale-110">
-                <AnimateIcon animateOnHover animateOnView animation={g.animation}>
-                  <g.Icon className="h-6 w-6 text-white" />
-                </AnimateIcon>
-              </div>
-              <h3 className="mb-2 text-2xl font-bold text-white md:text-3xl" style={{ fontFamily: 'var(--font-heading)' }}>{g.title}</h3>
-              <p className="text-sm font-medium text-white/80">Over 1,000+ books</p>
+              <button
+                type="button"
+                onClick={() => scrollByAmount(1)}
+                className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 backdrop-blur-xl transition hover:bg-white hover:text-black"
+                aria-label="Scroll genres right"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="absolute bottom-10 left-0 right-0 hidden justify-center text-white/40 md:flex">
-        <div className="flex items-center gap-2">
-          <AnimateIcon loop loopDelay={800} animation="turn">
-            <ArrowRight className="h-5 w-5" />
-          </AnimateIcon>
-          <span className="text-xs font-medium uppercase tracking-widest">Scroll to explore</span>
+        <div
+          ref={scrollRef}
+          className="rn-genre-scroll flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4 sm:gap-6 sm:px-10 lg:px-[max(4rem,calc((100vw-80rem)/2+4rem))]"
+        >
+          {genres.map((genre, index) => {
+            const Icon = genre.icon;
+
+            return (
+              <motion.article
+                key={genre.title}
+                initial={{ opacity: 0, y: 42, scale: 0.96 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{
+                  duration: 0.75,
+                  delay: index * 0.08,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="group relative h-[470px] min-w-[82vw] snap-start overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-[0_32px_90px_rgba(0,0,0,0.35)] sm:h-[560px] sm:min-w-[390px] lg:min-w-[430px]"
+              >
+                <img
+                  src={genre.image}
+                  alt={genre.title}
+                  draggable="false"
+                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/88" />
+                <div className="absolute inset-0 bg-black/20 transition duration-500 group-hover:bg-black/5" />
+
+                <div className="relative z-10 flex h-full flex-col justify-end p-7 sm:p-8">
+                  <div className="mb-6 grid h-20 w-20 place-items-center rounded-3xl border border-white/10 bg-white/15 text-white shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl transition duration-500 group-hover:-translate-y-2 group-hover:bg-white group-hover:text-black">
+                    <Icon className="h-9 w-9" />
+                  </div>
+
+                  <h3 className="text-4xl font-black leading-none tracking-[-0.05em] sm:text-5xl">
+                    {genre.title}
+                  </h3>
+
+                  <p className="mt-4 text-lg font-semibold text-white/75 sm:text-xl">
+                    {genre.count}
+                  </p>
+
+                  <div className="mt-7 h-px w-full bg-white/15">
+                    <div className="h-full w-0 bg-[#c97b6b] transition-all duration-700 group-hover:w-full" />
+                  </div>
+                </div>
+              </motion.article>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between px-6 sm:hidden">
+          <p className="text-[11px] font-black uppercase tracking-[0.26em] text-white/35">
+            Swipe cards
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollByAmount(-1)}
+              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70"
+              aria-label="Scroll genres left"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => scrollByAmount(1)}
+              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70"
+              aria-label="Scroll genres right"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
     </section>

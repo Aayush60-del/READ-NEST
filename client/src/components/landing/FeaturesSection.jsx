@@ -1,147 +1,156 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
-import { ArrowRight, BookOpenText, LibraryBig, TrendingUp } from "lucide-react";
-import AnimateIcon from "@/components/animate-ui/AnimateIcon";
-import ScrollReveal from "../ScrollReveal";
+﻿import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, BookOpen, LibraryBig, TrendingUp } from "lucide-react";
 
 const features = [
   {
-    Icon: BookOpenText,
-    animation: "draw",
+    id: "reader",
+    number: "01",
     title: "Immersive Reader",
     description:
       "Read in a clean, focused space with distraction-free controls, dark mode, bookmarks, notes, and smooth progress saving.",
-    number: "01",
+    icon: BookOpen,
   },
   {
-    Icon: TrendingUp,
-    animation: "pulse",
+    id: "progress",
+    number: "02",
     title: "Reading Progress",
     description:
       "Track pages, books, streaks, completion rate, and daily consistency with meaningful reading insights.",
-    number: "02",
+    icon: TrendingUp,
   },
   {
-    Icon: LibraryBig,
-    animation: "float",
+    id: "library",
+    number: "03",
     title: "Smart Library",
     description:
       "Organize your collection with smart shelves, tags, and recommendations tailored to your taste.",
-    number: "03",
+    icon: LibraryBig,
   },
 ];
 
 const FeaturesSection = () => {
-  const [hovered, setHovered] = useState(null);
+  const [activeFeature, setActiveFeature] = useState(null);
 
   return (
-    <section data-gsap-section id="features" className="section-padding bg-white text-black">
-      <div className="max-w-5xl mx-auto">
-        <ScrollReveal delay={0.1}>
-          <div className="mb-24">
-            <p
-              className="text-xs font-black uppercase tracking-[0.35em] text-blue-600 mb-5"
-              style={{ fontFamily: "var(--font-accent)" }}
-            >
-              (What we offer)
-            </p>
+    <section
+      id="features"
+      className="relative bg-[#f8f7f3] px-5 sm:px-8 lg:px-14 py-20 sm:py-24 lg:py-32 text-black overflow-hidden"
+    >
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 26 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-14 sm:mb-20"
+        >
+          <p className="text-xs font-black uppercase tracking-[0.32em] text-[#c97b6b] mb-4">
+            Core Experience
+          </p>
 
-            <h2
-              className="text-4xl md:text-6xl font-black tracking-tight uppercase leading-[0.95]"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              Built for readers,
-              <br />
-              <span className="text-slate-400">by readers.</span>
-            </h2>
-          </div>
-        </ScrollReveal>
+          <h2 className="max-w-4xl text-4xl sm:text-5xl lg:text-7xl font-black uppercase leading-[0.92] tracking-[-0.06em]">
+            Built for focused reading.
+          </h2>
+        </motion.div>
 
-        <div data-gsap-stagger className="divide-y divide-slate-200 border-y border-slate-200">
-          {features.map((f, i) => (
-            <ScrollReveal key={f.title} delay={0.1 + i * 0.08}>
-              <motion.div
-                data-gsap-item
-                onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-                className="group cursor-default"
+        <div className="border-t border-black/10">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            const isOpen = activeFeature === feature.id;
+
+            return (
+              <motion.article
+                key={feature.id}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{
+                  duration: 0.65,
+                  delay: index * 0.08,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                onMouseEnter={() => setActiveFeature(feature.id)}
+                onMouseLeave={() => setActiveFeature(null)}
+                onClick={() =>
+                  setActiveFeature(isOpen ? null : feature.id)
+                }
+                className={`group cursor-pointer border-b border-black/10 py-8 sm:py-10 transition-all duration-500 ${
+                  isOpen ? "bg-white/70 px-4 sm:px-6 rounded-3xl shadow-[0_24px_70px_rgba(15,23,42,0.08)] my-4 border-transparent" : ""
+                }`}
               >
-                <div className="grid grid-cols-12 items-center gap-4 py-8 md:py-10">
-                  <div className="col-span-1">
-                    <span className="text-xs font-mono text-slate-500">
-                      {f.number}
-                    </span>
-                  </div>
+                <div className="grid grid-cols-[42px_1fr_58px] sm:grid-cols-[70px_1fr_78px] gap-4 sm:gap-8 items-center">
+                  <span className="text-sm sm:text-base font-medium text-slate-400">
+                    {feature.number}
+                  </span>
 
-                  <div className="col-span-2 md:col-span-1">
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-300 ${
-                        hovered === i
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-blue-50 text-slate-900"
-                      }`}
-                    >
-                      <AnimateIcon
-                        animate={hovered === i}
-                        animateOnView
-                        animation={f.animation}
-                      >
-                        <f.Icon className="h-5 w-5" />
-                      </AnimateIcon>
-                    </div>
-                  </div>
-
-                  <div className="col-span-7 md:col-span-8">
-                    <h3
-                      className={`text-xl md:text-3xl font-black uppercase tracking-tight transition-colors ${
-                        hovered === i ? "text-blue-700" : "text-black"
-                      }`}
-                      style={{ fontFamily: "var(--font-heading)" }}
-                    >
-                      {f.title}
+                  <div className="min-w-0">
+                    <h3 className="text-3xl sm:text-5xl lg:text-7xl font-black uppercase tracking-[-0.06em] leading-[0.95]">
+                      {feature.title}
                     </h3>
+
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0, y: -8 }}
+                          animate={{ height: "auto", opacity: 1, y: 0 }}
+                          exit={{ height: 0, opacity: 0, y: -8 }}
+                          transition={{
+                            duration: 0.38,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
+                          className="overflow-hidden"
+                        >
+                          <p className="mt-5 sm:mt-6 max-w-2xl text-base sm:text-xl leading-relaxed text-slate-500">
+                            {feature.description}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
-                  <div className="col-span-2 flex justify-end">
-                    <AnimateIcon animate={hovered === i} animation="turn">
-                      <ArrowRight
-                        className={`h-5 w-5 transition-colors ${
-                          hovered === i ? "text-black" : "text-slate-400"
-                        }`}
-                      />
-                    </AnimateIcon>
-                  </div>
-                </div>
-
-                <div className="pb-6 pl-[calc(8.33%+16.66%+1rem)] md:hidden">
-                  <p className="max-w-xl text-sm leading-relaxed text-slate-500">
-                    {f.description}
-                  </p>
-                </div>
-
-                <AnimatePresence>
-                  {hovered === i && (
+                  <div className="flex flex-col items-center gap-4">
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.3,
-                        ease: [0.25, 0.1, 0.25, 1],
+                      animate={{
+                        scale: isOpen ? 1.08 : 1,
+                        rotate: isOpen ? -4 : 0,
                       }}
-                      className="hidden overflow-hidden md:block"
+                      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                      className={`h-14 w-14 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
+                        isOpen
+                          ? "bg-[#c97b6b] text-white"
+                          : "bg-[#eef5ff] text-slate-900"
+                      }`}
                     >
-                      <div className="pb-8 pl-[calc(8.33%+16.66%+1rem)] md:pl-[calc(8.33%+8.33%+1rem)]">
-                        <p className="max-w-xl text-sm md:text-base text-slate-500 leading-relaxed">
-                          {f.description}
-                        </p>
-                      </div>
+                      <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </ScrollReveal>
-          ))}
+
+                    <motion.div
+                      animate={{
+                        rotate: isOpen ? -45 : 0,
+                        x: isOpen ? 4 : 0,
+                      }}
+                      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                      className={`hidden sm:flex h-8 w-8 items-center justify-center transition-colors ${
+                        isOpen ? "text-[#c97b6b]" : "text-slate-400"
+                      }`}
+                    >
+                      <ArrowUpRight className="w-7 h-7" />
+                    </motion.div>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex sm:hidden items-center justify-between text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                  <span>{isOpen ? "Tap to close" : "Tap to read more"}</span>
+                  <ArrowUpRight
+                    className={`w-4 h-4 transition-transform ${
+                      isOpen ? "-rotate-45 text-[#c97b6b]" : ""
+                    }`}
+                  />
+                </div>
+              </motion.article>
+            );
+          })}
         </div>
       </div>
     </section>
