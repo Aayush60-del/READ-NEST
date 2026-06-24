@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -128,6 +128,7 @@ const ReaderPage = () => {
     // -- Core state ----------------------------------------------------------
     const [book, setBook] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
+    const pdfObjectUrlRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [pdfError, setPdfError] = useState(false);  // PDF-specific render error
@@ -158,6 +159,10 @@ const ReaderPage = () => {
 
     const pdfFile = useMemo(() => {
         if (!pdfUrl) return null;
+
+        if (pdfUrl.startsWith("blob:")) {
+            return pdfUrl;
+        }
 
         const resolvedUrl = pdfUrl.startsWith("http")
             ? pdfUrl
@@ -213,12 +218,52 @@ const ReaderPage = () => {
             setBookmarkRecords(records);
             setBookmarks(records.map((item) => item.pageNumber));
 
-            // 4. Get backend PDF URL
+            // 4. Get backend PDF URL, then load it as a browser Blob.
+            // This avoids react-pdf failing on protected backend URLs, S3 CORS, or expired signed URLs.
             const urlRes = await api.get(ENDPOINTS.BOOKS.READ(id));
+
             if (!urlRes?.url) {
                 setPdfError('missing');
             } else {
-                setPdfUrl(urlRes.url);
+                const resolvedPdfUrl = urlRes.url.startsWith("http")
+                    ? urlRes.url
+                    : `${API_BASE_URL}${urlRes.url.startsWith("/") ? "" : "/"}${urlRes.url}`;
+
+                const { token } = getStoredSession();
+
+                const pdfResponse = await fetch(resolvedPdfUrl, {
+                    method: "GET",
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    credentials: "omit",
+                });
+
+                if (!pdfResponse.ok) {
+                    let message = `PDF request failed with status ${pdfResponse.status}`;
+
+                    try {
+                        const text = await pdfResponse.text();
+                        if (text) message = text.slice(0, 220);
+                    } catch {
+                        // ignore text parse error
+                    }
+
+                    throw new Error(message);
+                }
+
+                const pdfBlob = await pdfResponse.blob();
+
+                if (pdfObjectUrlRef.current) {
+                    URL.revokeObjectURL(pdfObjectUrlRef.current);
+                }
+
+                const objectUrl = URL.createObjectURL(
+                    pdfBlob.type === "application/pdf"
+                        ? pdfBlob
+                        : new Blob([pdfBlob], { type: "application/pdf" })
+                );
+
+                pdfObjectUrlRef.current = objectUrl;
+                setPdfUrl(objectUrl);
             }
         } catch (err) {
             console.error('[ReaderPage] Failed to load:', err);
@@ -227,6 +272,15 @@ const ReaderPage = () => {
             setLoading(false);
         }
     }, [id]);
+
+    useEffect(() => {
+        return () => {
+            if (pdfObjectUrlRef.current) {
+                URL.revokeObjectURL(pdfObjectUrlRef.current);
+                pdfObjectUrlRef.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (id) fetchReaderData();
