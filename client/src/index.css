@@ -926,5 +926,47 @@ html body .landing-page section p {
 }
 
 /* READNEST DISCOVER BOOK CARD FIX END */
+/* READNEST FINGERTIPS CARD MOTION START */
 
+.rn-fingertips-card {
+  position: relative;
+  isolation: isolate;
+  transform-style: preserve-3d;
+  will-change: transform, opacity, filter;
+}
 
+.rn-fingertips-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms ease;
+  background: radial-gradient(
+    420px circle at var(--rn-glow-x, 50%) var(--rn-glow-y, 50%),
+    rgba(201, 123, 107, 0.18),
+    rgba(255, 255, 255, 0.08) 38%,
+    transparent 68%
+  );
+}
+
+.rn-fingertips-card:hover::before {
+  opacity: 1;
+}
+
+.rn-fingertips-card svg {
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  .rn-fingertips-card {
+    transform: none !important;
+  }
+
+  .rn-fingertips-card::before {
+    display: none;
+  }
+}
+
+/* READNEST FINGERTIPS CARD MOTION END */
