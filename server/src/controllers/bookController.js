@@ -1,4 +1,4 @@
-﻿const BookModel = require("../models/Book");
+const BookModel = require("../models/Book");
 const ReadingProgressModel = require("../models/ReadingProgress");
 const { uploadFileToS3, deleteFileFromS3, generateSignedUrl } = require("../services/s3Service");
 const StreakModel = require("../models/ReadStreak");
@@ -469,11 +469,15 @@ const UserProgress = async (req, res) => {
 };
 
 
+const MIN_PAGES_TO_COUNT_READING_DAY = 5;
+
 const saveUserProgress = async (req, res) => {
     try {
         const { id: userId } = req.user;
         const bookId = req.params.id;
-        const { currentPage } = req.body;
+        const { currentPage, sessionPagesRead = 0 } = req.body;
+        const normalizedSessionPagesRead = Math.max(0, Number(sessionPagesRead) || 0);
+        const shouldCountReadingDay = normalizedSessionPagesRead >= MIN_PAGES_TO_COUNT_READING_DAY;
 
         if (!isValidObjectId(bookId)) {
             return res.status(400).json({
