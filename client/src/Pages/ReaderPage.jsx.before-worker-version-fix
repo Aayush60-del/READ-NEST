@@ -14,7 +14,7 @@ import {
 import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
 
 // Using the local pdfjs-dist worker bundled with react-pdf for reliability
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const READING_MODES = {
     dark: {

@@ -14,7 +14,7 @@ import {
 import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
 
 // Using the local pdfjs-dist worker bundled with react-pdf for reliability
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const READING_MODES = {
     dark: {
@@ -202,55 +202,9 @@ const ReaderPage = () => {
             setBookmarkRecords(records);
             setBookmarks(records.map((item) => item.pageNumber));
 
-            // 4. Load PDF as base64 JSON directly from backend.
-            // Do not use api.get here because PDF routes are mounted under /lib, not /api.
-            const { token } = getStoredSession();
-
-            if (!token) {
-                console.error("[ReaderPage] No auth token found.");
-                setPdfError("load");
-                return;
-            }
-
-            const backendBaseUrl = API_BASE_URL
-                .replace(/\/api\/?$/, "")
-                .replace(/\/$/, "");
-
-            const pdfBase64Url = `${backendBaseUrl}/lib/books/${id}/pdf-base64`;
-
-            const response = await fetch(pdfBase64Url, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
-                },
-                cache: "no-store",
-            });
-
-            const rawText = await response.text();
-
-            if (!response.ok) {
-                console.error("[ReaderPage] PDF base64 request failed:", {
-                    status: response.status,
-                    url: pdfBase64Url,
-                    preview: rawText.slice(0, 400),
-                });
-                setPdfError("load");
-                return;
-            }
-
-            let pdfPayload;
-
-            try {
-                pdfPayload = JSON.parse(rawText);
-            } catch (parseError) {
-                console.error("[ReaderPage] PDF base64 JSON parse failed:", {
-                    error: parseError.message,
-                    preview: rawText.slice(0, 400),
-                });
-                setPdfError("load");
-                return;
-            }
+            // 4. Load PDF as base64 JSON from backend.
+            // This avoids S3 CORS, signed URLs, blob issues, and binary wrapper issues.
+            const pdfPayload = await api.get(`/lib/books/${id}/pdf-base64`);
 
             if (!pdfPayload?.base64) {
                 console.error("[ReaderPage] Missing base64 PDF payload:", pdfPayload);
@@ -268,23 +222,21 @@ const ReaderPage = () => {
             const firstBytes = new TextDecoder().decode(bytes.slice(0, 5));
 
             if (!firstBytes.startsWith("%PDF")) {
-                console.error("[ReaderPage] Decoded payload is not a PDF:", {
+                console.error("[ReaderPage] Decoded payload is not PDF:", {
                     firstBytes,
                     byteLength: bytes.byteLength,
-                    serverByteLength: pdfPayload.byteLength,
                 });
                 setPdfError("load");
                 return;
             }
 
-            console.log("[ReaderPage] PDF loaded successfully:", {
+            console.log("[ReaderPage] PDF base64 decoded:", {
                 bytes: bytes.byteLength,
                 firstBytes,
-                url: pdfBase64Url,
             });
 
             setPdfData(bytes);
-            setPdfUrl("loaded-from-direct-base64-fetch");
+            setPdfUrl("loaded-from-base64");
         } catch (err) {
             console.error('[ReaderPage] Failed to load:', err);
             setError(err.message || 'Failed to load book.');
@@ -443,12 +395,7 @@ const ReaderPage = () => {
     };
 
     const onDocumentLoadError = err => {
-        console.error('[react-pdf] Document load error:', {
-            name: err?.name,
-            message: err?.message,
-            stack: err?.stack,
-            raw: err,
-        });
+        console.error('[react-pdf] Document load error:', err);
         setPdfError('load');
     };
 

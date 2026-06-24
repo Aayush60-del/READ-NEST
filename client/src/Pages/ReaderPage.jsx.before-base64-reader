@@ -14,7 +14,7 @@ import {
 import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
 
 // Using the local pdfjs-dist worker bundled with react-pdf for reliability
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const READING_MODES = {
     dark: {
@@ -202,12 +202,12 @@ const ReaderPage = () => {
             setBookmarkRecords(records);
             setBookmarks(records.map((item) => item.pageNumber));
 
-            // 4. Load PDF as base64 JSON directly from backend.
-            // Do not use api.get here because PDF routes are mounted under /lib, not /api.
+            // 4. Load PDF bytes directly from protected backend stream.
+            // Correct backend route: /lib/books/:id/pdf-file
             const { token } = getStoredSession();
 
             if (!token) {
-                console.error("[ReaderPage] No auth token found.");
+                console.error("[ReaderPage] No auth token found for PDF request.");
                 setPdfError("load");
                 return;
             }
@@ -216,75 +216,67 @@ const ReaderPage = () => {
                 .replace(/\/api\/?$/, "")
                 .replace(/\/$/, "");
 
-            const pdfBase64Url = `${backendBaseUrl}/lib/books/${id}/pdf-base64`;
+            const pdfRoute = `${backendBaseUrl}/lib/books/${id}/pdf-file`;
 
-            const response = await fetch(pdfBase64Url, {
+            const pdfResponse = await fetch(pdfRoute, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
+                    Accept: "application/pdf",
                 },
                 cache: "no-store",
             });
 
-            const rawText = await response.text();
+            const contentType = pdfResponse.headers.get("content-type") || "";
+            const arrayBuffer = await pdfResponse.arrayBuffer();
 
-            if (!response.ok) {
-                console.error("[ReaderPage] PDF base64 request failed:", {
-                    status: response.status,
-                    url: pdfBase64Url,
-                    preview: rawText.slice(0, 400),
+            if (!pdfResponse.ok) {
+                const errorText = new TextDecoder().decode(arrayBuffer.slice(0, 300));
+                console.error("[ReaderPage] PDF HTTP failed:", {
+                    status: pdfResponse.status,
+                    contentType,
+                    errorText,
+                    url: pdfRoute,
                 });
                 setPdfError("load");
                 return;
             }
 
-            let pdfPayload;
-
-            try {
-                pdfPayload = JSON.parse(rawText);
-            } catch (parseError) {
-                console.error("[ReaderPage] PDF base64 JSON parse failed:", {
-                    error: parseError.message,
-                    preview: rawText.slice(0, 400),
+            if (!arrayBuffer || arrayBuffer.byteLength < 10) {
+                console.error("[ReaderPage] Empty PDF response:", {
+                    byteLength: arrayBuffer?.byteLength || 0,
+                    contentType,
+                    url: pdfRoute,
                 });
                 setPdfError("load");
                 return;
             }
 
-            if (!pdfPayload?.base64) {
-                console.error("[ReaderPage] Missing base64 PDF payload:", pdfPayload);
-                setPdfError("load");
-                return;
-            }
-
-            const binary = window.atob(pdfPayload.base64);
-            const bytes = new Uint8Array(binary.length);
-
-            for (let i = 0; i < binary.length; i += 1) {
-                bytes[i] = binary.charCodeAt(i);
-            }
-
-            const firstBytes = new TextDecoder().decode(bytes.slice(0, 5));
+            const firstBytes = new TextDecoder().decode(arrayBuffer.slice(0, 5));
 
             if (!firstBytes.startsWith("%PDF")) {
-                console.error("[ReaderPage] Decoded payload is not a PDF:", {
+                const preview = new TextDecoder().decode(arrayBuffer.slice(0, 300));
+                console.error("[ReaderPage] Response is not a PDF:", {
                     firstBytes,
-                    byteLength: bytes.byteLength,
-                    serverByteLength: pdfPayload.byteLength,
+                    contentType,
+                    preview,
+                    url: pdfRoute,
                 });
                 setPdfError("load");
                 return;
             }
 
-            console.log("[ReaderPage] PDF loaded successfully:", {
-                bytes: bytes.byteLength,
+            const pdfBytes = new Uint8Array(arrayBuffer.slice(0));
+
+            console.log("[ReaderPage] PDF bytes loaded:", {
+                bytes: pdfBytes.byteLength,
+                contentType,
                 firstBytes,
-                url: pdfBase64Url,
+                url: pdfRoute,
             });
 
-            setPdfData(bytes);
-            setPdfUrl("loaded-from-direct-base64-fetch");
+            setPdfData(pdfBytes);
+            setPdfUrl("loaded-from-backend-bytes");
         } catch (err) {
             console.error('[ReaderPage] Failed to load:', err);
             setError(err.message || 'Failed to load book.');
@@ -443,12 +435,7 @@ const ReaderPage = () => {
     };
 
     const onDocumentLoadError = err => {
-        console.error('[react-pdf] Document load error:', {
-            name: err?.name,
-            message: err?.message,
-            stack: err?.stack,
-            raw: err,
-        });
+        console.error('[react-pdf] Document load error:', err);
         setPdfError('load');
     };
 
