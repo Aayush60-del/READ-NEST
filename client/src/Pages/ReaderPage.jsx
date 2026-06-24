@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react';
 import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
 
-// Using the local pdfjs-dist worker bundled with react-pdf for reliability
+// Use version-matched PDF.js worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const READING_MODES = {
@@ -159,12 +158,19 @@ const ReaderPage = () => {
         totalPages > 0 ? Math.min(100, Math.round((currentPage / totalPages) * 100)) : 0;
 
     const pdfFile = useMemo(() => {
-        if (!pdfData) return null;
+        if (!pdfUrl) return null;
+
+        const { token } = getStoredSession();
 
         return {
-            data: pdfData,
+            url: pdfUrl,
+            httpHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+            withCredentials: false,
+            disableRange: true,
+            disableStream: true,
+            disableAutoFetch: true,
         };
-    }, [pdfData]);
+    }, [pdfUrl]);
 
     // -- Helpers --------------------------------------------------------------
     const showToast = useCallback((message, type = 'success') => {
@@ -202,12 +208,12 @@ const ReaderPage = () => {
             setBookmarkRecords(records);
             setBookmarks(records.map((item) => item.pageNumber));
 
-            // 4. Load PDF as base64 JSON directly from backend.
-            // Do not use api.get here because PDF routes are mounted under /lib, not /api.
+            // 4. Use protected backend PDF stream directly.
+            // react-pdf receives the URL with Authorization headers via pdfFile.
             const { token } = getStoredSession();
 
             if (!token) {
-                console.error("[ReaderPage] No auth token found.");
+                console.error("[ReaderPage] No auth token found for PDF.");
                 setPdfError("load");
                 return;
             }
@@ -216,75 +222,12 @@ const ReaderPage = () => {
                 .replace(/\/api\/?$/, "")
                 .replace(/\/$/, "");
 
-            const pdfBase64Url = `${backendBaseUrl}/lib/books/${id}/pdf-base64`;
+            const streamUrl = `${backendBaseUrl}/lib/books/${id}/pdf-file`;
 
-            const response = await fetch(pdfBase64Url, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
-                },
-                cache: "no-store",
-            });
+            console.log("[ReaderPage] PDF stream URL prepared:", streamUrl);
 
-            const rawText = await response.text();
-
-            if (!response.ok) {
-                console.error("[ReaderPage] PDF base64 request failed:", {
-                    status: response.status,
-                    url: pdfBase64Url,
-                    preview: rawText.slice(0, 400),
-                });
-                setPdfError("load");
-                return;
-            }
-
-            let pdfPayload;
-
-            try {
-                pdfPayload = JSON.parse(rawText);
-            } catch (parseError) {
-                console.error("[ReaderPage] PDF base64 JSON parse failed:", {
-                    error: parseError.message,
-                    preview: rawText.slice(0, 400),
-                });
-                setPdfError("load");
-                return;
-            }
-
-            if (!pdfPayload?.base64) {
-                console.error("[ReaderPage] Missing base64 PDF payload:", pdfPayload);
-                setPdfError("load");
-                return;
-            }
-
-            const binary = window.atob(pdfPayload.base64);
-            const bytes = new Uint8Array(binary.length);
-
-            for (let i = 0; i < binary.length; i += 1) {
-                bytes[i] = binary.charCodeAt(i);
-            }
-
-            const firstBytes = new TextDecoder().decode(bytes.slice(0, 5));
-
-            if (!firstBytes.startsWith("%PDF")) {
-                console.error("[ReaderPage] Decoded payload is not a PDF:", {
-                    firstBytes,
-                    byteLength: bytes.byteLength,
-                    serverByteLength: pdfPayload.byteLength,
-                });
-                setPdfError("load");
-                return;
-            }
-
-            console.log("[ReaderPage] PDF loaded successfully:", {
-                bytes: bytes.byteLength,
-                firstBytes,
-                url: pdfBase64Url,
-            });
-
-            setPdfData(bytes);
-            setPdfUrl("loaded-from-direct-base64-fetch");
+            setPdfUrl(streamUrl);
+            setPdfData(null);
         } catch (err) {
             console.error('[ReaderPage] Failed to load:', err);
             setError(err.message || 'Failed to load book.');
@@ -641,6 +584,8 @@ const ReaderPage = () => {
                 <main className="flex-1 overflow-auto flex items-start justify-center py-6 px-2">
                     {pdfError === 'missing' ? (
                         <PDFErrorState type="missing" theme={theme} onRetry={handleRetry} />
+                    ) : pdfError === 'load' ? (
+                        <PDFErrorState type="load" theme={theme} onRetry={handleRetry} />
                     ) : pdfFile ? (
                         <Document
                             file={pdfFile}
@@ -963,5 +908,6 @@ const ReaderPage = () => {
 };
 
 export default ReaderPage;
+
 
 
