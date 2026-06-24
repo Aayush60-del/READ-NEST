@@ -837,3 +837,92 @@ html body .landing-page section p {
 }
 
 /* READNEST PDF MOBILE WIDTH FIX END */
+/* READNEST DISCOVER BOOK CARD FIX START */
+
+.discover-page img,
+[class*="discover"] img {
+  max-width: 100%;
+}
+
+/* Trending / Discover book cover normalization */
+.discover-page .book-cover,
+.discover-page [data-book-cover],
+.discover-page article img,
+.discover-page .book-card img,
+.discover-page [class*="book"] img {
+  width: 220px !important;
+  height: 320px !important;
+  max-width: 220px !important;
+  max-height: 320px !important;
+  object-fit: cover !important;
+  border-radius: 1rem !important;
+  display: block !important;
+}
+
+/* Book card width should not expand because of image */
+.discover-page article,
+.discover-page .book-card,
+.discover-page [class*="book-card"] {
+  width: 220px !important;
+  max-width: 220px !important;
+  flex: 0 0 220px !important;
+}
+
+/* Trending grid / row alignment */
+.discover-page [class*="grid"],
+.discover-page [class*="carousel"],
+.discover-page [class*="trend"] {
+  align-items: start !important;
+}
+
+/* Book title text */
+.discover-page article h3,
+.discover-page article h4,
+.discover-page .book-card h3,
+.discover-page .book-card h4 {
+  font-size: 1.05rem !important;
+  line-height: 1.25 !important;
+  margin-top: 0.85rem !important;
+  max-width: 220px !important;
+}
+
+/* Author text */
+.discover-page article p,
+.discover-page .book-card p {
+  font-size: 0.85rem !important;
+  line-height: 1.35 !important;
+  max-width: 220px !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .discover-page .book-cover,
+  .discover-page [data-book-cover],
+  .discover-page article img,
+  .discover-page .book-card img,
+  .discover-page [class*="book"] img {
+    width: 150px !important;
+    height: 220px !important;
+    max-width: 150px !important;
+    max-height: 220px !important;
+  }
+
+  .discover-page article,
+  .discover-page .book-card,
+  .discover-page [class*="book-card"] {
+    width: 150px !important;
+    max-width: 150px !important;
+    flex: 0 0 150px !important;
+  }
+
+  .discover-page article h3,
+  .discover-page article h4,
+  .discover-page .book-card h3,
+  .discover-page .book-card h4,
+  .discover-page article p,
+  .discover-page .book-card p {
+    max-width: 150px !important;
+  }
+}
+
+/* READNEST DISCOVER BOOK CARD FIX END */
