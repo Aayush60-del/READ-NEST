@@ -926,3 +926,69 @@ html body .landing-page section p {
 }
 
 /* READNEST DISCOVER BOOK CARD FIX END */
+/* READNEST FINGERTIPS ADVANCED EFFECTS START */
+
+.rn-fingertips-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.rn-fingertips-card {
+  position: relative;
+  isolation: isolate;
+  will-change: transform, opacity, filter;
+  transform-style: preserve-3d;
+}
+
+.rn-fingertips-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  background:
+    radial-gradient(
+      420px circle at var(--rn-glow-x, 50%) var(--rn-glow-y, 50%),
+      rgba(201, 123, 107, 0.22),
+      rgba(255, 255, 255, 0.08) 38%,
+      transparent 68%
+    );
+}
+
+.rn-fingertips-card::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  background: linear-gradient(135deg, rgba(201, 123, 107, 0.28), transparent 40%, rgba(37, 99, 235, 0.12));
+}
+
+.rn-fingertips-card:hover::before,
+.rn-fingertips-card:hover::after {
+  opacity: 1;
+}
+
+.rn-fingertips-card svg,
+.rn-fingertips-card img {
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  .rn-fingertips-card {
+    transform: none !important;
+  }
+
+  .rn-fingertips-card::before,
+  .rn-fingertips-card::after {
+    display: none;
+  }
+}
+
+/* READNEST FINGERTIPS ADVANCED EFFECTS END */

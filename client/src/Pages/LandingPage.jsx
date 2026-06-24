@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from "react";
+import React, { useEffect } from "react";
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -67,6 +67,7 @@ const LandingPage = () => {
       <CustomCursor />
           <MobileLandingMotion />
       <LandingAdvancedEffects />
+      <FingertipsAdvancedEffects />
       <Navbar />
 
       <HeroSection />
