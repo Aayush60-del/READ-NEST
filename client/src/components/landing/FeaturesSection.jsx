@@ -35,9 +35,9 @@ const FeaturesSection = () => {
   return (
     <section
       id="features"
-      className="relative bg-[#f8f7f3] px-5 sm:px-8 lg:px-14 py-20 sm:py-24 lg:py-32 text-black overflow-hidden"
+      className="relative bg-[#f8f7f3] px-2 sm:px-8 lg:px-10 py-20 sm:py-24 lg:py-32 text-black overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: 26 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -80,7 +80,7 @@ const FeaturesSection = () => {
                 }`}
               >
                 <div className="grid grid-cols-[42px_1fr_58px] sm:grid-cols-[70px_1fr_78px] gap-4 sm:gap-8 items-center">
-                  <span className="text-sm sm:text-base font-medium text-slate-400">
+                  <span className="text-sm font-medium sm:text-base text-slate-400">
                     {feature.number}
                   </span>
 
@@ -101,7 +101,7 @@ const FeaturesSection = () => {
                           }}
                           className="overflow-hidden"
                         >
-                          <p className="mt-5 sm:mt-6 max-w-2xl text-base sm:text-xl leading-relaxed text-slate-500">
+                          <p className="max-w-2xl mt-5 text-base leading-relaxed sm:mt-6 sm:text-xl text-slate-500">
                             {feature.description}
                           </p>
                         </motion.div>
