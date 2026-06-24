@@ -1,5 +1,21 @@
-﻿const express = require("express");
+const express = require("express");
+const Book = require("../models/Book");
+const s3 = require("../config/s3");
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const router = express.Router();
+
+
+const streamToBufferForPdf = async (stream) => {
+  const chunks = [];
+
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks);
+};
+
+
 const { protect } = require("../middleware/authMiddleware");
 const { adminOnly } = require("../middleware/authMiddleware");
 const { createBook, getBooks, getBookById, updateBook, deleteBook, ReadingProgress, ContinueReading, getMyBooks, UserProgress, saveUserProgress, PdfRead, streamBookPdf } = require("../controllers/bookController");
@@ -68,5 +84,61 @@ router.delete("/books/highlights/:id", protect, DeleteHighlight);
 
 router.get("/streak", protect, getStreak);
 router.post("/streak/mark", protect, markRead);
+
+
+router.get("/books/:id/pdf-base64", protect, async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id).lean();
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    const key = book.bookFileKey;
+
+    if (!key) {
+      return res.status(404).json({ message: "PDF key missing for this book" });
+    }
+
+    if (!s3) {
+      return res.status(500).json({ message: "S3 is not configured" });
+    }
+
+    const result = await s3.send(
+      new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: key,
+      })
+    );
+
+    const buffer = await streamToBufferForPdf(result.Body);
+
+    if (!buffer || buffer.length === 0) {
+      return res.status(500).json({ message: "Empty PDF file received from S3" });
+    }
+
+    const header = buffer.subarray(0, 5).toString("utf8");
+
+    if (!header.startsWith("%PDF")) {
+      return res.status(500).json({
+        message: "S3 object is not a valid PDF",
+        header,
+      });
+    }
+
+    return res.json({
+      mimeType: "application/pdf",
+      byteLength: buffer.length,
+      base64: buffer.toString("base64"),
+    });
+  } catch (err) {
+    console.error("[pdf-base64] failed:", err);
+    return res.status(500).json({
+      message: "Failed to load PDF",
+      error: err.message,
+    });
+  }
+});
+
 
 module.exports = router;
