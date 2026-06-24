@@ -67,7 +67,6 @@ const LandingPage = () => {
       <CustomCursor />
           <MobileLandingMotion />
       <LandingAdvancedEffects />
-      <FingertipsAdvancedEffects />
       <Navbar />
 
       <HeroSection />
