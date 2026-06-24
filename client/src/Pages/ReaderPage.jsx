@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -129,6 +129,10 @@ const ReaderPage = () => {
     const [pdfUrl, setPdfUrl] = useState(null);
     const [pdfData, setPdfData] = useState(null);
     const pdfObjectUrlRef = useRef(null);
+    const pageContainerRef = useRef(null);
+    const [pageRenderWidth, setPageRenderWidth] = useState(() =>
+        typeof window !== "undefined" ? Math.max(280, Math.min(window.innerWidth - 24, 900)) : 900
+    );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [pdfError, setPdfError] = useState(false);  // PDF-specific render error
@@ -581,7 +585,7 @@ const ReaderPage = () => {
             {/* -- MAIN CONTENT ----------------------------------------------- */}
             <div className="flex-1 flex overflow-hidden relative">
                 {/* PDF Viewer: react-pdf Document/Page only */}
-                <main className="flex-1 overflow-auto flex items-start justify-center py-6 px-2">
+                <main ref={pageContainerRef} className="flex-1 overflow-auto flex items-start justify-center py-6 px-2">
                     {pdfError === 'missing' ? (
                         <PDFErrorState type="missing" theme={theme} onRetry={handleRetry} />
                     ) : pdfError === 'load' ? (
@@ -607,6 +611,7 @@ const ReaderPage = () => {
                             {!pdfError && (
                                 <Page
                                     pageNumber={currentPage}
+                                width={pageRenderWidth}
                                     scale={zoom}
                                     renderAnnotationLayer={true}
                                     renderTextLayer={true}

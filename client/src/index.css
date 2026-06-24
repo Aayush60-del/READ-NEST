@@ -812,3 +812,28 @@ html body .landing-page section p {
 }
 
 /* READNEST SOFT LANDING TONE FIX END */
+/* READNEST PDF MOBILE WIDTH FIX START */
+
+.react-pdf__Document,
+.react-pdf__Page {
+  max-width: 100% !important;
+}
+
+.react-pdf__Page canvas,
+.react-pdf__Page svg {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+@media (max-width: 768px) {
+  .react-pdf__Page {
+    overflow: hidden !important;
+  }
+
+  .react-pdf__Page canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* READNEST PDF MOBILE WIDTH FIX END */
