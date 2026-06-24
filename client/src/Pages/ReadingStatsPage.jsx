@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { Flame, BookOpen, Clock, Zap, BarChart, Book, CalendarDays, Trophy, Target } from 'lucide-react';
@@ -75,8 +75,8 @@ const ReadingStatsPage = () => {
                     api.get(ENDPOINTS.BOOKS.STATS),
                     api.get(ENDPOINTS.BOOKS.STREAK)
                 ]);
-                setStats(statsRes?.data || null);
-                setStreakData(streakRes?.data || null);
+                setStats(statsRes?.data?.data || statsRes?.data || null);
+                setStreakData(streakRes?.data?.data || streakRes?.data || null);
             } catch (err) {
                 console.error("Failed to fetch reading stats:", err);
             } finally {
