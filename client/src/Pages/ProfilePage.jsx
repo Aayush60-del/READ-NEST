@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { motion } from 'framer-motion';
@@ -32,7 +32,7 @@ const ProfilePage = () => {
 
   const signOut = () => {
     clearSession();
-    navigate('/auth');
+    navigate("/");
   };
 
   const joinDate = user?.createdAt

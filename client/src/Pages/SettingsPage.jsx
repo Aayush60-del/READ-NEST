@@ -1,4 +1,4 @@
-﻿import ReaderCharacterMotion from "@/components/visuals/ReaderCharacterMotion";
+import ReaderCharacterMotion from "@/components/visuals/ReaderCharacterMotion";
 import React, { useState } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
@@ -247,7 +247,7 @@ const SettingsPage = () => {
 
   const signOut = () => {
     clearSession();
-    navigate('/auth');
+    navigate("/");
   };
 
   const handleDeleteAccount = async () => {
