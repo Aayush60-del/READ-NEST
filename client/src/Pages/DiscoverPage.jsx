@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, TrendingUp, Compass, BookOpen, Search } from 'lucide-react';
 import api, { ENDPOINTS } from '@/lib/api';
 import BookCover from '@/components/books/BookCover';
+import BookCard from '@/components/books/BookCard';
 const normalizeCategory = (category) => {
     if (Array.isArray(category)) return category[0] || 'General';
     return category || 'General';
@@ -189,20 +190,11 @@ const DiscoverPage = () => {
 
                                     <div ref={rowRef} className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide scroll-smooth">
                                         {trendingBooks.map((book) => (
-                                            <Link to={`/books/${book._id}`} key={book._id} className="min-w-[190px] sm:min-w-[220px] group">
-                                                <div className="w-full aspect-[2/3] bg-[#d3bca8] dark:bg-[#1c2535] rounded-xl mb-4 overflow-hidden shadow-xl group-hover:-translate-y-2 transition-all duration-300 relative">
-                                                    <BookCover
-                                                        src={book.coverImage}
-                                                        title={book.title}
-                                                        author={book.author}
-                                                        rounded="rounded-xl"
-                                                        className="transition-transform duration-500 group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/40 to-transparent" />
-                                                </div>
-                                                <h3 className="font-serif text-xl text-black dark:text-white mb-1 group-hover:text-[#c97b6b] transition-colors line-clamp-2 leading-tight">{book.title}</h3>
-                                                <p className="text-sm text-black/40 dark:text-white/40">{book.author}</p>
-                                            </Link>
+                                            <BookCard
+                                                key={book._id}
+                                                book={book}
+                                                to={`/books/${book._id}`}
+                                            />
                                         ))}
                                     </div>
                                 </div>

@@ -5,6 +5,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Bookmark, Plus, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import api, { ENDPOINTS } from '@/lib/api';
 import BookCover from '@/components/books/BookCover';
+import BookCard from '@/components/books/BookCard';
 
 const BookDetailsPage = () => {
     const { id } = useParams();
@@ -147,18 +148,13 @@ const BookDetailsPage = () => {
 
                             <div ref={similarRef} className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-3 scroll-smooth">
                                 {similarBooks.map((simBook) => (
-                                    <Link to={`/books/${simBook._id}`} key={simBook._id} className="group cursor-pointer min-w-[150px] sm:min-w-[190px] md:min-w-[220px]">
-                                        <div className="w-full aspect-[2/3] bg-[#1a1a1a] rounded shadow-lg mb-4 opacity-90 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-300 overflow-hidden flex items-center justify-center border border-black/10 dark:border-white/10">
-                                            <BookCover
-                                                src={simBook.coverImage}
-                                                title={simBook.title}
-                                                author={simBook.author}
-                                                rounded="rounded"
-                                                className="transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                        </div>
-                                        <h4 className="font-serif font-medium text-lg leading-tight group-hover:text-[#a65d50] dark:group-hover:text-[#c97b6b] transition-colors line-clamp-2">{simBook.title}</h4>
-                                    </Link>
+                                    <BookCard
+                                        key={simBook._id}
+                                        book={simBook}
+                                        to={`/books/${simBook._id}`}
+                                        variant="compact"
+                                        showAuthor={false}
+                                    />
                                 ))}
                             </div>
                         </div>
