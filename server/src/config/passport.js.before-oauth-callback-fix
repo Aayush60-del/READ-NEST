@@ -30,7 +30,7 @@ function maybeUseGoogleStrategy() {
       {
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL || "/auth/google/callback",
+        callbackURL: "/auth/google/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -72,7 +72,7 @@ function maybeUseGitHubStrategy() {
       {
         clientID: GITHUB_CLIENT_ID,
         clientSecret: GITHUB_CLIENT_SECRET,
-        callbackURL: process.env.GITHUB_CALLBACK_URL || "/auth/github/callback",
+        callbackURL: "/auth/github/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         try {

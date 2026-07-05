@@ -1,0 +1,752 @@
+const BookModel = require("../models/Book");
+const ReadingProgressModel = require("../models/ReadingProgress");
+const { uploadFileToS3, deleteFileFromS3, generateSignedUrl } = require("../services/s3Service");
+const StreakModel = require("../models/ReadStreak");
+const notificationService = require("../services/notificationService");
+const s3 = require("../config/s3");
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
+const fs = require("fs");
+const path = require("path");
+const mongoose = require("mongoose");
+const BookMark = require("../models/BookMark");
+const Notes = require("../models/Notes");
+const Highlights = require("../models/Highlight");
+
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+const normalizeCategory = (category) => {
+    if (Array.isArray(category)) {
+        return category.map((item) => String(item).trim()).filter(Boolean);
+    }
+
+    return String(category || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+};
+
+const normalizeTotalPages = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.floor(parsed) : NaN;
+};
+
+const hasS3Config = Boolean(
+    process.env.AWS_REGION &&
+    process.env.AWS_ACCESS_KEY_ID &&
+    process.env.AWS_SECRET_ACCESS_KEY &&
+    process.env.AWS_S3_BUCKET_NAME
+);
+
+
+const createBook = async (req, res) => {
+
+    let coverResult, pdfResult;
+    try {
+
+        const { title, author, description, category, totalPages } = req.body;
+        const normalizedCategory = normalizeCategory(category);
+        const normalizedTotalPages = normalizeTotalPages(totalPages);
+
+        if (!title || !author || !description || !normalizedCategory.length || !normalizedTotalPages) {
+            return res.status(400).json({
+                message: "All fields are required"
+            });
+        }
+
+        if (normalizedTotalPages < 1) {
+            return res.status(400).json({
+                message: "Total pages must be at least 1"
+            });
+        }
+
+        if (!req.files || !req.files.coverImage || !req.files.pdfFile) {
+            return res.status(400).json({
+                message: "Cover image and PDF file are required"
+            });
+        }
+
+
+        const coverImage = req.files.coverImage[0];
+        const pdfFile = req.files.pdfFile[0];
+
+        coverResult = await uploadFileToS3(coverImage, "cover");
+
+        pdfResult = await uploadFileToS3(pdfFile, "books");
+
+
+
+        const newBook = new BookModel({
+            title,
+            author,
+            description,
+            category: normalizedCategory,
+            coverImage: coverResult.url,
+            coverImageKey: coverResult.key,
+            bookFileUrl: pdfResult.url,
+            bookFileKey: pdfResult.key,
+            uploadedBy: req.user.id,
+            totalPages: normalizedTotalPages,
+
+        });
+
+        await newBook.save();
+        res.status(201).json({
+            message: "Book created successfully",
+            data: newBook,
+        });
+    }
+    catch (err) {
+        if (coverResult?.key) {
+            await deleteFileFromS3(coverResult.key);
+        }
+
+        if (pdfResult?.key) {
+            await deleteFileFromS3(pdfResult.key);
+        }
+        console.error("Error creating book:", err);
+        res.status(500).json({
+            message: "Server error while creating book",
+            error: err.message,
+        });
+    }
+
+
+};
+
+const getBooks = async (req, res) => {
+
+    try {
+
+        const Bookdata = await BookModel.find().lean();
+
+        res.status(200).json({
+            message: "Books retrieved successfully",
+            data: Bookdata,
+        });
+    } catch (err) {
+        console.error("Error retrieving books:", err);
+        res.status(500).json({
+            message: "Server error while retrieving books",
+            error: err.message,
+        });
+    }
+};
+
+const getBookById = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
+        const Bookdata = await BookModel.findById(id);
+
+        if (!Bookdata) {
+            return res.status(404).json({
+                message: "Book not found"
+            });
+        }
+        res.status(200).json({
+            message: "Book retrieved successfully",
+            data: Bookdata,
+        });
+    } catch (err) {
+        console.error("Error retrieving book:", err);
+        res.status(500).json({
+            message: "Server error while retrieving book",
+            error: err.message,
+        });
+    }
+};
+
+const updateBook = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedData = { ...req.body };
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
+
+        if (updatedData.category !== undefined) {
+            updatedData.category = normalizeCategory(updatedData.category);
+            if (!updatedData.category.length) {
+                return res.status(400).json({ message: "Category is required" });
+            }
+        }
+
+        if (updatedData.totalPages !== undefined) {
+            updatedData.totalPages = normalizeTotalPages(updatedData.totalPages);
+            if (!updatedData.totalPages || updatedData.totalPages < 1) {
+                return res.status(400).json({ message: "Total pages must be at least 1" });
+            }
+        }
+
+        const existingBook = await BookModel.findById(id);
+        if (!existingBook) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        // Process new cover image
+        if (req.files && req.files.coverImage) {
+            const coverImage = req.files.coverImage[0];
+            const coverResult = await uploadFileToS3(coverImage, "cover");
+            updatedData.coverImage = coverResult.url;
+            updatedData.coverImageKey = coverResult.key;
+
+            if (existingBook.coverImageKey) {
+                deleteFileFromS3(existingBook.coverImageKey).catch(err => console.error("Failed to delete old cover", err));
+            }
+        }
+
+        // Process new PDF
+        if (req.files && req.files.pdfFile) {
+            const pdfFile = req.files.pdfFile[0];
+            const pdfResult = await uploadFileToS3(pdfFile, "books");
+            updatedData.bookFileUrl = pdfResult.url;
+            updatedData.bookFileKey = pdfResult.key;
+
+            if (existingBook.bookFileKey) {
+                deleteFileFromS3(existingBook.bookFileKey).catch(err => console.error("Failed to delete old PDF", err));
+            }
+        }
+
+        const updatedBook = await BookModel.findByIdAndUpdate(id, updatedData, { returnDocument: 'after' });
+
+        res.status(200).json({
+            message: "Book updated successfully",
+            data: updatedBook,
+        });
+    } catch (err) {
+        console.error("Error updating book:", err);
+        res.status(500).json({
+            message: "Server error while updating book",
+            error: err.message,
+        });
+    }
+};
+
+const deleteBook = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
+        const deletedBook = await BookModel.findByIdAndDelete(id);
+
+        if (!deletedBook) {
+            return res.status(404).json({
+                message: "Book not found"
+            });
+        }
+
+        if (deletedBook.coverImage) {
+            await deleteFileFromS3(deletedBook.coverImageKey);
+        }
+        if (deletedBook.bookFileUrl) {
+            await deleteFileFromS3(deletedBook.bookFileKey);
+        }
+
+        await Promise.all([
+            ReadingProgressModel.deleteMany({ bookId: id }),
+            BookMark.deleteMany({ bookId: id }),
+            Notes.deleteMany({ bookId: id }),
+            Highlights.deleteMany({ bookId: id }),
+        ]);
+
+        res.status(200).json({
+            message: "Book deleted successfully",
+        });
+    } catch (err) {
+        console.error("Error deleting book:", err);
+        res.status(500).json({
+            message: "Server error while deleting book",
+            error: err.message,
+        });
+    }
+
+};
+
+const ReadingProgress = async (req, res) => {
+
+    try {
+        const { id: userId } = req.user;
+        const { bookId, currentPage } = req.body;
+
+        const book = await BookModel.findById(bookId);
+
+        if (!book) {
+            return res.status(404).json({
+                message: "Book not found"
+            });
+        }
+
+        const normalizedPage = Math.min(Math.max(Number(currentPage) || 0, 0), book.totalPages);
+        const percentageCompleted = Math.round((normalizedPage / book.totalPages) * 100);
+
+        const progress = await ReadingProgressModel.findOneAndUpdate(
+            { userId, bookId },
+            {
+                $set: {
+                    currentPage: normalizedPage,
+                    percentageCompleted,
+                    isCompleted: normalizedPage >= book.totalPages,
+                    totalPages: book.totalPages,
+                }
+            },
+            {
+                upsert: true,
+                returnDocument: 'after',
+                setDefaultsOnInsert: true
+            }
+        );
+        res.status(200).json({
+            message: "Reading progress updated successfully",
+            data: progress
+        });
+    }
+    catch (err) {
+        console.error("Error updating reading progress:", err);
+        res.status(500).json({
+            message: "Server error while updating reading progress",
+            error: err.message,
+        });
+    }
+}
+
+const ContinueReading = async (req, res) => {
+    try {
+        const { id } = req.user;
+
+        const progressData = await ReadingProgressModel
+            .find({
+                userId: id,
+                isCompleted: false
+            })
+            .populate("bookId", "title author coverImage totalPages category createdAt updatedAt");
+
+        if (!progressData.length) {
+            return res.status(200).json({
+                message: "No books available for continue reading",
+                data: []
+            });
+        }
+
+        const continueReadingData = progressData
+            .filter(prog => prog.bookId)
+            .map((prog) => ({
+                bookId: prog.bookId._id,
+                title: prog.bookId.title,
+                currentPage: prog.currentPage,
+                author: prog.bookId.author,
+                totalPages: prog.bookId.totalPages,
+                category: prog.bookId.category || [],
+                percentageCompleted: prog.percentageCompleted,
+                coverImage: prog.bookId.coverImage,
+                updatedAt: prog.updatedAt,
+                createdAt: prog.createdAt
+            }));
+
+        return res.status(200).json({
+            message: "Continue reading data retrieved successfully",
+            data: continueReadingData
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        return res.status(500).json({
+            message: "Server error while fetching continue reading",
+            error: err.message
+        });
+    }
+};
+
+const getMyBooks = async (req, res) => {
+    try {
+        const { id } = req.user;
+        const myBooks = await ReadingProgressModel.find({ userId: id }).sort({ updatedAt: -1 }).populate("bookId", "title author category coverImage totalPages createdAt updatedAt");
+
+        if (myBooks.length === 0) {
+            return res.status(200).json({
+                message: "No books found in your library",
+                data: []
+            });
+        }
+
+        const booksData = myBooks
+            .filter(entry => entry.bookId)
+            .map((entry) => ({
+                bookId: entry.bookId._id,
+                title: entry.bookId.title,
+                author: entry.bookId.author,
+                category: entry.bookId.category || [],
+                totalPages: entry.bookId.totalPages || entry.totalPages,
+                isCompleted: entry.isCompleted,
+                currentPage: entry.currentPage,
+                percentageCompleted: entry.percentageCompleted,
+                coverImage: entry.bookId.coverImage,
+                updatedAt: entry.updatedAt,
+                createdAt: entry.createdAt
+            }));
+
+
+        res.status(200).json({
+            message: "User's books retrieved successfully",
+            data: booksData
+        });
+
+    } catch (err) {
+        {
+            console.error(err);
+            res.status(500).json({
+                message: "Server error while fetching user's books",
+                error: err.message
+            });
+        }
+
+    }
+};
+
+const UserProgress = async (req, res) => {
+    try {
+        const { id: userId } = req.user;
+        const bookId = req.params.id;
+
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
+        const progressData = await ReadingProgressModel
+            .findOne({
+                userId,
+                bookId
+            })
+            .populate("bookId", "title author coverImage totalPages");
+
+        if (!progressData || !progressData.bookId) {
+            // Return 200 with null data so the reader can show a clean "no progress yet" state
+            return res.status(200).json({
+                message: "No progress yet",
+                data: null
+            });
+        }
+
+        res.status(200).json({
+            message: "Request fulfilled",
+            data: {
+                bookId: progressData.bookId._id,
+                title: progressData.bookId.title,
+                author: progressData.bookId.author,
+                coverImage: progressData.bookId.coverImage,
+                totalPages: progressData.bookId.totalPages,
+                currentPage: progressData.currentPage,
+                percentageCompleted: progressData.percentageCompleted,
+                isCompleted: progressData.isCompleted
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            message: "Server error while fetching user progress",
+            error: err.message
+        });
+    }
+};
+
+
+const saveUserProgress = async (req, res) => {
+    try {
+        const { id: userId } = req.user;
+        const bookId = req.params.id;
+        const { currentPage } = req.body;
+
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({
+                message: "Invalid book id"
+            });
+        }
+
+        const book = await BookModel.findById(bookId);
+
+        if (!book) {
+            return res.status(404).json({
+                message: "Book not found"
+            });
+        }
+
+        // Fetch existing progress BEFORE updating so we can detect first completion
+        const existingProgress = await ReadingProgressModel.findOne({ userId, bookId });
+
+        if (!Number.isFinite(Number(currentPage))) {
+            return res.status(400).json({
+                message: "Current page must be a valid number"
+            });
+        }
+
+        const safeTotalPages = Math.max(1, Number(book.totalPages) || 1);
+        const normalizedPage = Math.min(Math.max(Number(currentPage) || 0, 0), safeTotalPages);
+
+        const percentageCompleted = Math.round(
+            (normalizedPage / safeTotalPages) * 100
+        );
+
+        const isCompleted =
+            normalizedPage >= safeTotalPages;
+
+        await ReadingProgressModel.findOneAndUpdate(
+            {
+                userId,
+                bookId
+            },
+            {
+                $set: {
+                    currentPage: normalizedPage,
+                    percentageCompleted,
+                    isCompleted,
+                    totalPages: safeTotalPages
+                }
+            },
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+        );
+
+        // Send Book Completion Notification only on the FIRST time it becomes completed
+        if (isCompleted && (!existingProgress || !existingProgress.isCompleted)) {
+            await notificationService.sendNotification({
+                userId,
+                title: "Book Completed",
+                message: `Congratulations! You finished reading ${book.title}.`,
+                type: "book_completed",
+                url: `/books/${bookId}`
+            });
+        }
+
+        // Auto-mark streak for today when user reads
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let streak = await StreakModel.findOne({ userId });
+            if (!streak) {
+                await StreakModel.create({ userId, streak: 1, lastReadDate: today, readDates: [today] });
+            } else {
+                const lastRead = streak.lastReadDate ? new Date(streak.lastReadDate) : null;
+                if (lastRead) lastRead.setHours(0, 0, 0, 0);
+                if (!lastRead || lastRead.getTime() !== today.getTime()) {
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const newStreak = lastRead && lastRead.getTime() === yesterday.getTime() ? streak.streak + 1 : 1;
+                    const alreadyHasToday = streak.readDates.some(d => { const dt = new Date(d); dt.setHours(0,0,0,0); return dt.getTime() === today.getTime(); });
+                    streak.streak = newStreak;
+                    streak.lastReadDate = today;
+                    if (!alreadyHasToday) streak.readDates.push(today);
+                    await streak.save();
+
+                    // Check milestone
+                    const milestones = [1, 3, 7, 14, 30, 60, 100];
+                    if (milestones.includes(newStreak)) {
+                        let msg = "";
+                        if (newStreak === 1) msg = "You've taken the first step. Great job!";
+                        else if (newStreak === 3) msg = "Three days in a row! You're building a habit.";
+                        else if (newStreak === 7) msg = "Amazing consistency. Keep reading every day.";
+                        else if (newStreak >= 30) msg = "You are building a powerful reading habit.";
+                        else msg = `You've read for ${newStreak} consecutive days!`;
+
+                        await notificationService.sendNotification({
+                            userId,
+                            title: `${newStreak} Day Streak Unlocked`,
+                            message: msg,
+                            type: "streak_achievement",
+                            url: "/stats"
+                        });
+                    }
+                }
+            }
+        } catch (streakErr) {
+            // Non-blocking - streak failure shouldn't break progress save
+            console.error("Streak update failed:", streakErr.message);
+        }
+
+        return res.status(200).json({
+            message: "Progress updated successfully",
+            data: {
+                currentPage: normalizedPage,
+                percentageCompleted,
+                isCompleted
+            }
+        });
+
+
+    }
+    catch (err) {
+        console.error("[saveUserProgress] Error:", err);
+
+        res.status(500).json({
+            message: "Server error while saving user progress",
+            error: err.message
+        });
+
+    }
+}
+
+const PdfRead = async (req, res) => {
+    try {
+        const bookId = req.params.id;
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
+        const bookData = await BookModel.findById(bookId);
+
+        if (!bookData) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        if (!bookData.bookFileUrl && !bookData.bookFileKey) {
+            return res.status(404).json({ message: "PDF file not found for this book" });
+        }
+
+        return res.status(200).json({
+            message: "PDF proxy URL generated successfully",
+            url: `/lib/books/${bookId}/pdf-file`
+        });
+    } catch (err) {
+        console.log(err.message);
+        return res.status(500).json({ message: err.message });
+    }
+}
+
+const getPdfKeyFromBook = (bookData) => {
+    if (bookData.bookFileKey) return bookData.bookFileKey;
+
+    if (!bookData.bookFileUrl) return "";
+
+    try {
+        const parsedUrl = new URL(bookData.bookFileUrl);
+        const uploadsIndex = parsedUrl.pathname.indexOf("/uploads/");
+        if (uploadsIndex !== -1) {
+            return decodeURIComponent(parsedUrl.pathname.slice(uploadsIndex + "/uploads/".length));
+        }
+        return decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
+    } catch {
+        const match = String(bookData.bookFileUrl).match(/uploads[\\/](.+)$/);
+        return match ? match[1].replace(/\\/g, "/") : "";
+    }
+};
+
+const streamBookPdf = async (req, res) => {
+    try {
+        const bookId = req.params.id;
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
+        const bookData = await BookModel.findById(bookId);
+
+        if (!bookData) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        const key = getPdfKeyFromBook(bookData);
+
+        const filename = String(bookData.title || "book").replace(/[^\w .-]/g, "").trim() || "book";
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="${filename}.pdf"`);
+        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Accept-Ranges", "bytes");
+
+        // Local upload fallback
+        if (!hasS3Config) {
+            const localPath = path.join(__dirname, "../../public/uploads", key);
+
+            if (key && fs.existsSync(localPath)) {
+                const stat = fs.statSync(localPath);
+                const range = req.headers.range;
+
+                if (range) {
+                    const parts = range.replace(/bytes=/, "").split("-");
+                    const start = parseInt(parts[0], 10);
+                    const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+
+                    if (Number.isNaN(start) || Number.isNaN(end) || start >= stat.size || end >= stat.size) {
+                        res.setHeader("Content-Range", `bytes */${stat.size}`);
+                        return res.status(416).end();
+                    }
+
+                    res.status(206);
+                    res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+                    res.setHeader("Content-Length", String(end - start + 1));
+                    return fs.createReadStream(localPath, { start, end }).pipe(res);
+                }
+
+                res.setHeader("Content-Length", String(stat.size));
+                return fs.createReadStream(localPath).pipe(res);
+            }
+
+            return res.status(404).json({
+                message: "Local PDF file not found. Re-upload this book PDF from admin panel."
+            });
+        }
+
+        // S3 stream through backend, so browser does not need S3 CORS.
+        if (!key) {
+            return res.status(404).json({
+                message: "PDF key missing. Re-upload this book PDF from admin panel."
+            });
+        }
+
+        const range = req.headers.range;
+        const command = new GetObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: key,
+            ...(range ? { Range: range } : {}),
+        });
+
+        const s3Response = await s3.send(command);
+
+        if (range && s3Response.ContentRange) {
+            res.status(206);
+            res.setHeader("Content-Range", s3Response.ContentRange);
+        }
+
+        if (s3Response.ContentLength) {
+            res.setHeader("Content-Length", String(s3Response.ContentLength));
+        }
+
+        return s3Response.Body.pipe(res);
+    } catch (err) {
+        console.error("PDF stream error:", err);
+        return res.status(500).json({
+            message: "Failed to stream PDF",
+            error: err.message
+        });
+    }
+};
+
+module.exports = {
+    createBook,
+    getBooks,
+    getBookById,
+    updateBook,
+    deleteBook,
+    ReadingProgress,
+    ContinueReading,
+    getMyBooks,
+    UserProgress,
+    saveUserProgress,
+    PdfRead,
+    streamBookPdf
+};
+
