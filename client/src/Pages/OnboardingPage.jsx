@@ -9,7 +9,7 @@ import {
   Library,
   Search,
 } from 'lucide-react';
-import { getStoredSession } from '@/lib/api';
+import { clearSession, fetchCurrentUser, getStoredSession } from '@/lib/api';
 
 export const ONBOARDING_STORAGE_KEY = 'readnest_onboarding_seen';
 
@@ -221,24 +221,60 @@ const OnboardingContent = ({ onFinish }) => {
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const [showSplash, setShowSplash] = useState(true);
-
-  const redirectPath = useMemo(() => {
+  const initialSession = useMemo(() => {
     const { token, user } = getStoredSession();
-    if (!token || !user) return null;
-    return user.role === 'admin' ? '/admin' : '/overview';
+    return { token, user };
   }, []);
+  const [sessionUser, setSessionUser] = useState(initialSession.user);
+  const [resolvingSession, setResolvingSession] = useState(Boolean(initialSession.token) && !initialSession.user);
+
+  const redirectPath = sessionUser ? (sessionUser.role === 'admin' ? '/admin' : '/overview') : null;
 
   useEffect(() => {
-    if (redirectPath) {
-      navigate(redirectPath, { replace: true });
+    let isActive = true;
+
+    if (!initialSession.token || initialSession.user) {
+      setResolvingSession(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    fetchCurrentUser()
+      .then((nextUser) => {
+        if (!isActive) return;
+        setSessionUser(nextUser);
+      })
+      .catch(() => {
+        clearSession();
+        if (!isActive) return;
+        setSessionUser(null);
+      })
+      .finally(() => {
+        if (isActive) setResolvingSession(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [initialSession.token, initialSession.user]);
+
+  useEffect(() => {
+    if (resolvingSession || redirectPath) {
+      if (redirectPath) navigate(redirectPath, { replace: true });
+      return undefined;
+    }
+
+    if (localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true') {
+      navigate('/auth', { replace: true });
       return undefined;
     }
 
     const timer = window.setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
     return () => window.clearTimeout(timer);
-  }, [navigate, redirectPath]);
+  }, [navigate, redirectPath, resolvingSession]);
 
-  if (redirectPath) {
+  if (resolvingSession || redirectPath) {
     return null;
   }
 

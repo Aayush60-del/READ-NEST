@@ -1,13 +1,17 @@
-﻿import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import './App.css';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { clearSession, fetchCurrentUser, getStoredSession } from '@/lib/api';
+
+const ONBOARDING_STORAGE_KEY = 'readnest_onboarding_seen';
 
 // Lazy loaded pages
 const LandingPage = lazy(() => import('./Pages/LandingPage'));
 const AuthPage = lazy(() => import('./Pages/AuthPage'));
+const OnboardingPage = lazy(() => import('./Pages/OnboardingPage'));
 const FeedbackPage = lazy(() => import('./Pages/FeedbackPage'));
 const OverviewPage = lazy(() => import('./Pages/OverviewPage'));
 const ReaderPage = lazy(() => import('./Pages/ReaderPage'));
@@ -44,43 +48,91 @@ const FallbackLoader = () => (
   </div>
 );
 
+const PublicEntryRoute = () => {
+  const [sessionState, setSessionState] = useState(() => {
+    const { token, user } = getStoredSession();
+    return { token, user, loading: Boolean(token) && !user };
+  });
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!sessionState.token || sessionState.user) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    fetchCurrentUser()
+      .then((nextUser) => {
+        if (!isActive) return;
+        setSessionState((current) => ({ ...current, user: nextUser, loading: false }));
+      })
+      .catch(() => {
+        clearSession();
+        if (!isActive) return;
+        setSessionState({ token: null, user: null, loading: false });
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [sessionState.token, sessionState.user]);
+
+  if (sessionState.loading) {
+    return <FallbackLoader />;
+  }
+
+  if (sessionState.token && sessionState.user) {
+    return <Navigate to={sessionState.user.role === 'admin' ? '/admin' : '/overview'} replace />;
+  }
+
+  const hasSeenOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+
+  if (!hasSeenOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <LandingPage />;
+};
+
 function App() {
   return (
     <ErrorBoundary>
       <NotificationProvider>
         <BrowserRouter>
-        <Suspense fallback={<FallbackLoader />}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/oauth-success" element={<OAuthSuccess />} />
-            <Route path="/feedback" element={<FeedbackPage />} />
+          <Suspense fallback={<FallbackLoader />}>
+            <Routes>
+              <Route path="/" element={<PublicEntryRoute />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/oauth-success" element={<OAuthSuccess />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
 
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<OverviewPage />} />
-              <Route path="/overview" element={<OverviewPage />} />
-              <Route path="/library" element={<LibraryPage />} />
-              <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/reading-stats" element={<ReadingStatsPage />} />
-              <Route path="/stats" element={<ReadingStatsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/books/:id" element={<BookDetailsPage />} />
-              <Route path="/books/:id/read" element={<ReaderPage />} />
-            </Route>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<OverviewPage />} />
+                <Route path="/overview" element={<OverviewPage />} />
+                <Route path="/library" element={<LibraryPage />} />
+                <Route path="/discover" element={<DiscoverPage />} />
+                <Route path="/reading-stats" element={<ReadingStatsPage />} />
+                <Route path="/stats" element={<ReadingStatsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/books/:id" element={<BookDetailsPage />} />
+                <Route path="/books/:id/read" element={<ReaderPage />} />
+              </Route>
 
-            <Route element={<AdminRoute />}>
-              <Route path="/admin" element={<AdminPage />} />
-            </Route>
+              <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<AdminPage />} />
+              </Route>
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
       </NotificationProvider>
     </ErrorBoundary>
   );
 }
 
 export default App;
-
