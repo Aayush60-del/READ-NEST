@@ -970,3 +970,114 @@ html body .landing-page section p {
 }
 
 /* READNEST FINGERTIPS CARD MOTION END */
+/* READNEST DISCOVER COVER SIZE FIX START */
+
+.discover-page img,
+.discover-book-card img,
+.book-card img {
+  max-width: 100%;
+}
+
+.discover-page .book-cover,
+.discover-book-card .book-cover,
+.book-card .book-cover {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  max-height: 340px;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.discover-page .book-cover img,
+.discover-book-card .book-cover img,
+.book-card .book-cover img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block;
+}
+
+.discover-page [class*="grid"] > a,
+.discover-page [class*="grid"] > div {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .discover-page .book-cover,
+  .discover-book-card .book-cover,
+  .book-card .book-cover {
+    max-height: 320px;
+  }
+}
+
+@media (max-width: 640px) {
+  .discover-page .book-cover,
+  .discover-book-card .book-cover,
+  .book-card .book-cover {
+    max-height: 260px;
+    border-radius: 14px;
+  }
+}
+
+/* READNEST DISCOVER COVER SIZE FIX END */
+/* READNEST BOOK CARD IMAGE SIZE FIX START */
+
+/* Book cards on Discover + Similar Books */
+main a[href^="/books/"] {
+  width: 220px !important;
+  max-width: 220px !important;
+  display: block !important;
+}
+
+main a[href^="/books/"] img {
+  width: 220px !important;
+  height: 320px !important;
+  max-width: 220px !important;
+  max-height: 320px !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 14px !important;
+}
+
+/* If image is inside card div */
+main div:has(> a[href^="/books/"]) {
+  min-width: 0;
+}
+
+/* Similar/Discover grid spacing stays clean */
+main section:has(a[href^="/books/"]) {
+  overflow-x: visible;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  main a[href^="/books/"] {
+    width: 190px !important;
+    max-width: 190px !important;
+  }
+
+  main a[href^="/books/"] img {
+    width: 190px !important;
+    height: 285px !important;
+    max-width: 190px !important;
+    max-height: 285px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  main a[href^="/books/"] {
+    width: 145px !important;
+    max-width: 145px !important;
+  }
+
+  main a[href^="/books/"] img {
+    width: 145px !important;
+    height: 220px !important;
+    max-width: 145px !important;
+    max-height: 220px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* READNEST BOOK CARD IMAGE SIZE FIX END */
