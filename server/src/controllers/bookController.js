@@ -539,57 +539,65 @@ const saveUserProgress = async (req, res) => {
             });
         }
 
-        // Auto-mark streak for today when user reads
-        try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            let streak = await StreakModel.findOne({ userId });
-            if (!streak) {
-                await StreakModel.create({ userId, streak: 1, lastReadDate: today, readDates: [today] });
-            } else {
-                const lastRead = streak.lastReadDate ? new Date(streak.lastReadDate) : null;
-                if (lastRead) lastRead.setHours(0, 0, 0, 0);
-                if (!lastRead || lastRead.getTime() !== today.getTime()) {
-                    const yesterday = new Date(today);
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    const newStreak = lastRead && lastRead.getTime() === yesterday.getTime() ? streak.streak + 1 : 1;
-                    const alreadyHasToday = streak.readDates.some(d => { const dt = new Date(d); dt.setHours(0,0,0,0); return dt.getTime() === today.getTime(); });
-                    streak.streak = newStreak;
-                    streak.lastReadDate = today;
-                    if (!alreadyHasToday) streak.readDates.push(today);
-                    await streak.save();
+        // Only qualified sessions count as a reading day; regular page progress is saved above.
+        if (shouldCountReadingDay) {
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                let streak = await StreakModel.findOne({ userId });
+                if (!streak) {
+                    await StreakModel.create({ userId, streak: 1, lastReadDate: today, readDates: [today] });
+                } else {
+                    const lastRead = streak.lastReadDate ? new Date(streak.lastReadDate) : null;
+                    if (lastRead) lastRead.setHours(0, 0, 0, 0);
+                    if (!lastRead || lastRead.getTime() !== today.getTime()) {
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        const newStreak = lastRead && lastRead.getTime() === yesterday.getTime() ? streak.streak + 1 : 1;
+                        const alreadyHasToday = streak.readDates.some(d => { const dt = new Date(d); dt.setHours(0,0,0,0); return dt.getTime() === today.getTime(); });
+                        streak.streak = newStreak;
+                        streak.lastReadDate = today;
+                        if (!alreadyHasToday) streak.readDates.push(today);
+                        await streak.save();
 
-                    // Check milestone
-                    const milestones = [1, 3, 7, 14, 30, 60, 100];
-                    if (milestones.includes(newStreak)) {
-                        let msg = "";
-                        if (newStreak === 1) msg = "You've taken the first step. Great job!";
-                        else if (newStreak === 3) msg = "Three days in a row! You're building a habit.";
-                        else if (newStreak === 7) msg = "Amazing consistency. Keep reading every day.";
-                        else if (newStreak >= 30) msg = "You are building a powerful reading habit.";
-                        else msg = `You've read for ${newStreak} consecutive days!`;
+                        // Check milestone
+                        const milestones = [1, 3, 7, 14, 30, 60, 100];
+                        if (milestones.includes(newStreak)) {
+                            let msg = "";
+                            if (newStreak === 1) msg = "You've taken the first step. Great job!";
+                            else if (newStreak === 3) msg = "Three days in a row! You're building a habit.";
+                            else if (newStreak === 7) msg = "Amazing consistency. Keep reading every day.";
+                            else if (newStreak >= 30) msg = "You are building a powerful reading habit.";
+                            else msg = `You've read for ${newStreak} consecutive days!`;
 
-                        await notificationService.sendNotification({
-                            userId,
-                            title: `${newStreak} Day Streak Unlocked`,
-                            message: msg,
-                            type: "streak_achievement",
-                            url: "/stats"
-                        });
+                            await notificationService.sendNotification({
+                                userId,
+                                title: `${newStreak} Day Streak Unlocked`,
+                                message: msg,
+                                type: "streak_achievement",
+                                url: "/stats"
+                            });
+                        }
                     }
                 }
+            } catch (streakErr) {
+                // Non-blocking - streak failure shouldn't break progress save
+                console.error("Streak update failed:", streakErr.message);
             }
-        } catch (streakErr) {
-            // Non-blocking - streak failure shouldn't break progress save
-            console.error("Streak update failed:", streakErr.message);
         }
 
         return res.status(200).json({
             message: "Progress updated successfully",
+            progressSaved: true,
+            readingDayCounted: shouldCountReadingDay,
+            sessionPagesRead: normalizedSessionPagesRead,
             data: {
                 currentPage: normalizedPage,
                 percentageCompleted,
-                isCompleted
+                isCompleted,
+                progressSaved: true,
+                readingDayCounted: shouldCountReadingDay,
+                sessionPagesRead: normalizedSessionPagesRead
             }
         });
 

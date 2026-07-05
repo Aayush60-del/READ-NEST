@@ -66,7 +66,7 @@ const BookCard = ({
     >
       <div
         className={cn(
-          'relative aspect-[2/3] w-full overflow-hidden border border-black/10 bg-[#d3bca8] transition-shadow duration-300 group-hover:shadow-2xl dark:border-white/10 dark:bg-[#1c2535]',
+          'relative aspect-[2/3] w-full overflow-hidden border border-black/10 bg-[#f2e8dc] transition-shadow duration-300 group-hover:shadow-2xl dark:border-white/10 dark:bg-[#1c2535]',
           styles.cover
         )}
       >
@@ -77,7 +77,7 @@ const BookCard = ({
             loading="lazy"
             decoding="async"
             onError={() => setImageFailed(true)}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="relative flex h-full w-full flex-col justify-between overflow-hidden bg-gradient-to-br from-[#241714] via-[#9f4f43] to-[#f3d4c8] p-5 text-white transition-transform duration-500 group-hover:scale-105">

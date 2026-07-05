@@ -5,6 +5,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { clearSession, getStoredSession } from '@/lib/api';
 import { useNotification } from '@/contexts/useNotification';
 import AnimateIcon from '@/components/animate-ui/AnimateIcon';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 
 const DashboardNavbar = ({ hideLogo = true }) => {
   const [notifOpen, setNotifOpen] = useState(false);
@@ -47,6 +48,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
   };
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full bg-[#fcf9f2] dark:bg-[#0f1419] py-4 md:py-8 transition-colors duration-300">
       <div className="max-w-[1200px] mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
 
@@ -68,9 +70,15 @@ const DashboardNavbar = ({ hideLogo = true }) => {
 
           {/* Search Bar */}
           <form onSubmit={handleSearchSubmit} className="relative max-w-lg w-full hidden md:block group">
-            <AnimateIcon animateOnHover animation="pulse" className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40">
-              <Search className="w-4 h-4 transition-colors duration-300" />
-            </AnimateIcon>
+            <button
+              type="submit"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40 transition-colors duration-300 hover:text-[#c97b6b] dark:text-white/40 dark:hover:text-[#c97b6b]"
+              aria-label="Search books"
+            >
+              <AnimateIcon animateOnHover animation="pulse">
+                <Search className="w-4 h-4" />
+              </AnimateIcon>
+            </button>
             <input
               type="search"
               value={globalSearch}
@@ -343,6 +351,8 @@ const DashboardNavbar = ({ hideLogo = true }) => {
       </AnimatePresence>
 
     </header>
+    <MobileBottomNav />
+    </>
   );
 };
 

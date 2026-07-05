@@ -10,6 +10,7 @@ const LandingAdvancedEffects = () => {
     const isMobile = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches;
 
     if (prefersReducedMotion) return;
+    const cleanupFns = [];
 
     const ctx = gsap.context(() => {
       /*
@@ -80,13 +81,15 @@ const LandingAdvancedEffects = () => {
             "-=0.65"
           );
 
-          gsap.to(heroVisual, {
-            y: isMobile ? -6 : -12,
-            duration: 3.2,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: -1,
-          });
+          if (!isMobile) {
+            gsap.to(heroVisual, {
+              y: -12,
+              duration: 3.2,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+            });
+          }
         }
       }
 
@@ -275,6 +278,10 @@ const LandingAdvancedEffects = () => {
 
           button.addEventListener("mousemove", handleMove);
           button.addEventListener("mouseleave", handleLeave);
+          cleanupFns.push(() => {
+            button.removeEventListener("mousemove", handleMove);
+            button.removeEventListener("mouseleave", handleLeave);
+          });
         });
       }
 
@@ -282,6 +289,7 @@ const LandingAdvancedEffects = () => {
     });
 
     return () => {
+      cleanupFns.forEach((cleanup) => cleanup());
       ctx.revert();
     };
   }, []);

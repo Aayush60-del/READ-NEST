@@ -31,7 +31,7 @@ export const Sidebar = () => {
 
     const handleLogout = () => {
         clearSession();
-        navigate('/auth');
+        navigate('/');
     };
 
     return (

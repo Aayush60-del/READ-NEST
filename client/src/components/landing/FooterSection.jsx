@@ -1,5 +1,5 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, BookOpenCheck } from 'lucide-react';
 import AnimateIcon from '@/components/animate-ui/AnimateIcon';
@@ -13,11 +13,25 @@ const footerLinks = [
 
 const FooterSection = () => {
   const sectionRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
+  const [isMobileMotion, setIsMobileMotion] = useState(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px), (hover: none), (pointer: coarse)').matches
+  );
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'end start'],
   });
   const textX = useTransform(scrollYProgress, [0, 1], ['5%', '-5%']);
+  const shouldReduceMotion = prefersReducedMotion || isMobileMotion;
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px), (hover: none), (pointer: coarse)');
+    const update = () => setIsMobileMotion(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   const scrollToTarget = (target) => {
     if (!target) return;
@@ -57,7 +71,7 @@ const FooterSection = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       >
-        <motion.div style={{ x: textX }}>
+        <motion.div style={shouldReduceMotion ? undefined : { x: textX }}>
           <h2 className="giant-text text-center text-white/[0.03] hover:text-white/[0.08] transition-colors duration-700 select-none uppercase">
             READNEST
           </h2>

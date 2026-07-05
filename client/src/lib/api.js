@@ -79,6 +79,12 @@ export const ENDPOINTS = {
     PROFILE: '/user/profile',
     BY_ID: (id) => `/user/${id}`,
   },
+  ADMIN: {
+    ANALYTICS: '/api/admin/analytics',
+  },
+  PUBLIC: {
+    STATS: '/api/public/stats',
+  },
   BOOKS: {
     LIST: '/lib/books',
     ADMIN_LIST: '/lib/books/lib',

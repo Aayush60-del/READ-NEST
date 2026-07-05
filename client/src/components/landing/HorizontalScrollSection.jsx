@@ -52,7 +52,18 @@ const HorizontalScrollSection = () => {
     const progress = progressRef.current;
 
     if (!section || !viewport || !track) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches;
 
+    if (prefersReducedMotion || isMobile) {
+      gsap.set(track, { clearProps: "transform" });
+      if (progress) {
+        gsap.set(progress, { scaleX: 1, transformOrigin: "left center" });
+      }
+      return undefined;
+    }
+
+    const cleanupFns = [];
     const ctx = gsap.context(() => {
       const getDistance = () => {
         return Math.max(0, track.scrollWidth - viewport.clientWidth);
@@ -93,19 +104,21 @@ const HorizontalScrollSection = () => {
       images.forEach((img) => {
         if (!img.complete) {
           img.addEventListener("load", refresh, { once: true });
+          cleanupFns.push(() => img.removeEventListener("load", refresh));
         }
       });
 
       window.addEventListener("resize", refresh);
-
-      return () => {
+      cleanupFns.push(() => {
         window.removeEventListener("resize", refresh);
-        images.forEach((img) => img.removeEventListener("load", refresh));
         horizontalTween.kill();
-      };
+      });
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      cleanupFns.forEach((cleanup) => cleanup());
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -149,7 +162,7 @@ const HorizontalScrollSection = () => {
 
           <div
             ref={viewportRef}
-            className="rn-genre-viewport relative w-full overflow-hidden"
+            className="rn-genre-viewport relative w-full overflow-x-auto overflow-y-hidden lg:overflow-hidden"
           >
             <div
               ref={trackRef}

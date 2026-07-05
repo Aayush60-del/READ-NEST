@@ -4,7 +4,7 @@ import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, TrendingUp, Compass, BookOpen, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, Compass, BookOpen, Search, X } from 'lucide-react';
 import api, { ENDPOINTS } from '@/lib/api';
 import BookCover from '@/components/books/BookCover';
 import BookCard from '@/components/books/BookCard';
@@ -22,14 +22,15 @@ const DiscoverPage = () => {
     const rowRef = useRef(null);
 
     useEffect(() => {
-        const paramSearch = searchParams.get('search') || '';
+        const paramSearch = (searchParams.get('search') || '').trim();
         setSearchQuery(paramSearch);
     }, [searchParams]);
 
     const updateSearch = (value) => {
         setSearchQuery(value);
         const nextParams = new URLSearchParams(searchParams);
-        if (value.trim()) nextParams.set('search', value);
+        const trimmedValue = value.trim();
+        if (trimmedValue) nextParams.set('search', trimmedValue);
         else nextParams.delete('search');
         setSearchParams(nextParams, { replace: true });
     };
@@ -58,7 +59,12 @@ const DiscoverPage = () => {
         return books.filter((book) => {
             const category = Array.isArray(book.category) ? book.category : [book.category || 'General'];
             const matchesCategory = activeCategory === 'All' || category.includes(activeCategory);
-            const matchesQuery = !query || `${book.title} ${book.author} ${book.description}`.toLowerCase().includes(query);
+            const searchableText = [
+                book.title,
+                book.author,
+                ...category,
+            ].filter(Boolean).join(' ').toLowerCase();
+            const matchesQuery = !query || searchableText.includes(query);
             return matchesCategory && matchesQuery;
         });
     }, [books, searchQuery, activeCategory]);
@@ -80,7 +86,7 @@ const DiscoverPage = () => {
         <div className="discover-page min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
             <Sidebar />
 
-            <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-20">
+            <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
                 <DashboardNavbar />
 
                 <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-10 pt-6">
@@ -101,9 +107,19 @@ const DiscoverPage = () => {
                             <input
                                 value={searchQuery}
                                 onChange={(event) => updateSearch(event.target.value)}
-                                placeholder="Search title, author, mood..."
+                                placeholder="Search title, author, category..."
                                 className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm text-black dark:text-white placeholder-black/35 dark:placeholder-white/35"
                             />
+                            {searchQuery.trim() && (
+                                <button
+                                    type="button"
+                                    onClick={() => updateSearch('')}
+                                    className="rounded-full p-1 text-black/35 transition-colors hover:bg-black/5 hover:text-black dark:text-white/35 dark:hover:bg-white/10 dark:hover:text-white"
+                                    aria-label="Clear search"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -127,7 +143,9 @@ const DiscoverPage = () => {
                             <ReaderCharacterMotion size="medium" imageClassName="h-[260px]" showBadge={false} dark />
                             <div className="text-center md:text-left">
                                 <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#c97b6b] md:mx-0" />
-                                <h2 className="font-serif text-3xl text-black dark:text-white">No matching books yet.</h2>
+                                <h2 className="font-serif text-3xl text-black dark:text-white">
+                                    {searchQuery.trim() ? `No books found for "${searchQuery.trim()}"` : 'No matching books yet.'}
+                                </h2>
                                 <p className="mt-3 text-sm leading-6 text-black/55 dark:text-white/55">Try a different title, author, or category. The discovery shelf updates instantly as your catalog grows.</p>
                                 <button onClick={() => { updateSearch(''); setActiveCategory('All'); }} className="mt-6 inline-flex rounded-xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-[#b8695c]">Clear Filters</button>
                             </div>

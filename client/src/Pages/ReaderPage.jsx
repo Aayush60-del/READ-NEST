@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -53,6 +53,10 @@ const READING_MODES = {
         description: 'Reduces eye strain',
     },
 };
+
+const MIN_SESSION_PAGES_FOR_READING_DAY = 5;
+const AUTO_SAVE_DEBOUNCE_MS = 1200;
+const AUTO_SAVE_INTERVAL_MS = 20000;
 
 // -- Toast ----------------------------------------------------------------------
 const Toast = ({ message, type = 'success', onDone }) => {
@@ -120,9 +124,12 @@ const PDFErrorState = ({ type, theme, onRetry }) => {
 // -- Main Reader ----------------------------------------------------------------
 const ReaderPage = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const containerRef = useRef(null);
     const autoSaveTimerRef = useRef(null);
+    const autoSaveDebounceRef = useRef(null);
     const readingStartRef = useRef(Date.now());
+    const sessionReadPagesRef = useRef(new Set());
 
     // -- Core state ----------------------------------------------------------
     const [book, setBook] = useState(null);
@@ -160,6 +167,10 @@ const ReaderPage = () => {
     const theme = READING_MODES[mode];
     const progress =
         totalPages > 0 ? Math.min(100, Math.round((currentPage / totalPages) * 100)) : 0;
+    const currentPageRef = useRef(currentPage);
+    const totalPagesRef = useRef(totalPages);
+    currentPageRef.current = currentPage;
+    totalPagesRef.current = totalPages;
 
     const pdfFile = useMemo(() => {
         if (!pdfUrl) return null;
@@ -253,12 +264,6 @@ const ReaderPage = () => {
         if (id) fetchReaderData();
     }, [id, fetchReaderData, retryCount]);
 
-    // -- Track pages read -----------------------------------------------------
-    useEffect(() => {
-        setPagesRead(prev => new Set([...prev, currentPage]));
-        setIsCurrentPageBookmarked(bookmarks.includes(currentPage));
-    }, [currentPage, bookmarks]);
-
     // -- Reading time tracker -------------------------------------------------
     useEffect(() => {
         const timer = setInterval(() => {
@@ -269,11 +274,39 @@ const ReaderPage = () => {
 
     // -- Save progress function -----------------------------------------------
     const saveProgress = useCallback(
-        async (page = currentPage, silent = false) => {
+        async (page = currentPageRef.current, silent = false, options = {}) => {
             if (!id || !page || page < 1) return;
+            const pageNumber = Number(page);
+            const safeTotalPages = Math.max(1, Number(totalPagesRef.current) || 1);
+            const percentageCompleted = Math.min(
+                100,
+                Math.round((pageNumber / safeTotalPages) * 100)
+            );
+            const sessionPagesRead = sessionReadPagesRef.current.size;
+            const payload = {
+                currentPage: pageNumber,
+                percentageCompleted,
+                progress: percentageCompleted,
+                sessionPagesRead,
+            };
+
+            if (options.keepalive) {
+                const { token } = getStoredSession();
+                fetch(`${API_BASE_URL}${ENDPOINTS.BOOKS.PROGRESS(id)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                    body: JSON.stringify(payload),
+                    keepalive: true,
+                }).catch(err => console.error('[ReaderPage] Keepalive progress save failed:', err));
+                return;
+            }
+
             setSaving(true);
             try {
-                await api.post(ENDPOINTS.BOOKS.PROGRESS(id), { currentPage: page });
+                await api.post(ENDPOINTS.BOOKS.PROGRESS(id), payload);
                 if (!silent) showToast('Progress saved!');
             } catch (err) {
                 console.error('[ReaderPage] Save progress failed:', err);
@@ -282,23 +315,55 @@ const ReaderPage = () => {
                 setSaving(false);
             }
         },
-        [id, currentPage, showToast]
+        [id, showToast]
     );
 
-    // -- Auto-save every 30 seconds --------------------------------------------
+    // -- Track pages read and debounce progress saves after page changes -------
+    useEffect(() => {
+        if (currentPage > 0) {
+            // Session-only Set controls whether today's streak/heatmap can count.
+            sessionReadPagesRef.current.add(currentPage);
+            setPagesRead(new Set(sessionReadPagesRef.current));
+        }
+        setIsCurrentPageBookmarked(bookmarks.includes(currentPage));
+
+        clearTimeout(autoSaveDebounceRef.current);
+        autoSaveDebounceRef.current = setTimeout(() => {
+            saveProgress(currentPage, true);
+        }, AUTO_SAVE_DEBOUNCE_MS);
+
+        return () => clearTimeout(autoSaveDebounceRef.current);
+    }, [currentPage, bookmarks, saveProgress]);
+
+    // -- Auto-save every 20 seconds while the reader is open -------------------
     useEffect(() => {
         autoSaveTimerRef.current = setInterval(() => {
-            saveProgress(currentPage, true);
-        }, 30000);
+            saveProgress(currentPageRef.current, true);
+        }, AUTO_SAVE_INTERVAL_MS);
         return () => clearInterval(autoSaveTimerRef.current);
-    }, [currentPage, saveProgress]);
+    }, [saveProgress]);
+
+    const handleBackToLibrary = useCallback(async (event) => {
+        event.preventDefault();
+        const sessionPagesRead = sessionReadPagesRef.current.size;
+        await saveProgress(currentPageRef.current, true);
+
+        if (sessionPagesRead < MIN_SESSION_PAGES_FOR_READING_DAY) {
+            showToast("Read at least 5 pages to count today’s progress.", 'error');
+            return;
+        }
+
+        navigate('/library');
+    }, [navigate, saveProgress, showToast]);
+
+    useEffect(() => {
+        return () => clearTimeout(autoSaveDebounceRef.current);
+    }, []);
 
     // -- Save on page unload --------------------------------------------------
-    const currentPageRef = useRef(currentPage);
-    currentPageRef.current = currentPage;
     useEffect(() => {
         const handleUnload = () => {
-            saveProgress(currentPageRef.current, true);
+            saveProgress(currentPageRef.current, true, { keepalive: true });
         };
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') handleUnload();
@@ -467,14 +532,14 @@ const ReaderPage = () => {
             >
                 {/* Left */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Link
-                        to="/library"
-                        onClick={() => saveProgress(currentPage, true)}
+                    <button
+                        type="button"
+                        onClick={handleBackToLibrary}
                         className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0"
                         title="Back to Library"
                     >
                         <ArrowLeft className={`w-5 h-5 ${theme.text}`} />
-                    </Link>
+                    </button>
                     <div className="min-w-0">
                         <h1 className={`text-sm font-bold truncate ${theme.text}`}>
                             {book?.data?.title || book?.title || 'Unknown Book'}

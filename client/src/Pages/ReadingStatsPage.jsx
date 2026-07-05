@@ -107,7 +107,7 @@ const ReadingStatsPage = () => {
         <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
             <Sidebar />
 
-            <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-20">
+            <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
                 <DashboardNavbar />
 
                 <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-10 pt-6">

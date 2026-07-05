@@ -1,10 +1,34 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Library, Sparkles } from "lucide-react";
 import AnimateIcon from "@/components/animate-ui/AnimateIcon";
 
-const HeroSection = () => {
+const formatMetric = (value, loading) => {
+  if (loading) return "-";
+  return (Math.max(0, Number(value) || 0)).toLocaleString();
+};
+
+const HeroSection = ({ stats, statsLoading = false }) => {
   const prefersReducedMotion = useReducedMotion();
+  const [isMobileMotion, setIsMobileMotion] = useState(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches
+  );
+  const shouldReduceHeroMotion = prefersReducedMotion || isMobileMotion;
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)");
+    const update = () => setIsMobileMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  const heroStats = [
+    { value: stats?.activeReaders, label: "Readers" },
+    { value: stats?.totalPagesRead, label: "Pages" },
+    { value: stats?.publishedBooks || stats?.totalBooks, label: "Books" },
+  ];
 
   return (
     <section
@@ -30,9 +54,9 @@ const HeroSection = () => {
 
       <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-14 px-6 pb-20 pt-32 md:px-10 lg:grid-cols-[1fr_0.9fr] lg:px-16">
         <motion.div
-          initial={{ opacity: 0, y: 35, filter: "blur(10px)" }}
+          initial={shouldReduceHeroMotion ? false : { opacity: 0, y: 35, filter: "blur(10px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+          transition={shouldReduceHeroMotion ? { duration: 0 } : { duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/70 px-4 py-2 shadow-sm">
             <AnimateIcon animateOnView animation="spark">
@@ -89,15 +113,15 @@ const HeroSection = () => {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 36, scale: 0.96 }}
+          initial={shouldReduceHeroMotion ? false : { opacity: 0, x: 36, scale: 0.96 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
-          transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          transition={shouldReduceHeroMotion ? { duration: 0 } : { duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
         >
           <motion.div
-            animate={prefersReducedMotion ? undefined : { y: [0, -14, 0] }}
+            animate={shouldReduceHeroMotion ? undefined : { y: [0, -14, 0] }}
             transition={
-              prefersReducedMotion
+              shouldReduceHeroMotion
                 ? undefined
                 : { duration: 5, repeat: Infinity, ease: "easeInOut" }
             }
@@ -123,26 +147,16 @@ const HeroSection = () => {
             </div>
 
             <div className="relative mt-5 grid grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                <div className="text-2xl font-black text-slate-950">42</div>
-                <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                  Day Streak
+              {heroStats.map((item) => (
+                <div key={item.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+                  <div className="text-2xl font-black text-slate-950">
+                    {formatMetric(item.value, statsLoading)}
+                  </div>
+                  <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                    {item.label}
+                  </div>
                 </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                <div className="text-2xl font-black text-slate-950">8k+</div>
-                <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                  Pages
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                <div className="text-2xl font-black text-slate-950">12</div>
-                <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                  Books
-                </div>
-              </div>
+              ))}
             </div>
           </motion.div>
         </motion.div>

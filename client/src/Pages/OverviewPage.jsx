@@ -6,6 +6,7 @@ import api, { ENDPOINTS, getStoredSession } from '@/lib/api';
 import { Link } from 'react-router-dom';
 import { buildLast7Days } from '@/lib/readingInsights';
 import BookCover from '@/components/books/BookCover';
+import BookCard from '@/components/books/BookCard';
 
 // --- Helpers ---
 const getGreeting = () => {
@@ -111,7 +112,7 @@ const OverviewPage = () => {
 
       <Sidebar />
 
-      <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen">
+      <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-0">
         <DashboardNavbar />
 
         <div className="max-w-[1200px] w-full mx-auto px-4 sm:px-10 py-6 sm:py-10 pb-32">
@@ -323,19 +324,12 @@ const OverviewPage = () => {
               {recentBooks.length > 0 ? (
                 <div ref={recentScrollRef} className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-3 scroll-smooth">
                   {recentBooks.map((book) => (
-                    <Link key={book._id} to={`/books/${book._id}`} className="group block min-w-[155px] sm:min-w-[185px] md:min-w-[220px] max-w-[240px]">
-                      <div className="aspect-[3/4] bg-[#d3bca8] dark:bg-[#243040] rounded-xl mb-4 overflow-hidden relative shadow-md transition-shadow hover:shadow-xl">
-                        <BookCover
-                          src={book.coverImage}
-                          title={book.title}
-                          author={book.author}
-                          rounded="rounded-xl"
-                          className="transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                      <h4 className="font-serif text-black dark:text-[#f2e6d8] text-sm mb-1 truncate group-hover:text-[#c97b6b] transition-colors">{book.title}</h4>
-                      <p className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest truncate">{book.author}</p>
-                    </Link>
+                    <BookCard
+                      key={book._id}
+                      book={book}
+                      to={`/books/${book._id}`}
+                      variant="compact"
+                    />
                   ))}
                 </div>
               ) : (

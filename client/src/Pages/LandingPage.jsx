@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -17,22 +17,39 @@ import HorizontalScrollSection from "../components/landing/HorizontalScrollSecti
 import TestimonialsSection from "../components/landing/TestimonialsSection";
 import CTASection from "../components/landing/CTASection";
 import FooterSection from "../components/landing/FooterSection";
+import api, { ENDPOINTS } from "@/lib/api";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const LandingPage = () => {
+  const [publicStats, setPublicStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPublicStats = async () => {
+      try {
+        const res = await api.get(ENDPOINTS.PUBLIC.STATS);
+        setPublicStats(res?.data || null);
+      } catch (err) {
+        console.error("Failed to load public stats:", err);
+        setPublicStats(null);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchPublicStats();
+  }, []);
+
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+    const canUseSmoothScroll = window.matchMedia(
+      "(min-width: 769px) and (pointer: fine) and (hover: hover)"
+    ).matches;
 
-    if (prefersReducedMotion) {
-      document.documentElement.style.scrollBehavior = "smooth";
-
-      return () => {
-        document.documentElement.style.scrollBehavior = "";
-      };
-    }
+    if (prefersReducedMotion || !canUseSmoothScroll) return undefined;
 
     const lenis = new Lenis({
       duration: 1.05,
@@ -69,13 +86,13 @@ const LandingPage = () => {
       <LandingAdvancedEffects />
       <Navbar />
 
-      <HeroSection />
+      <HeroSection stats={publicStats} statsLoading={statsLoading} />
       <FeaturesSection />
       <BenefitsSection />
       <ScrollTextSection />
       <HorizontalScrollSection />
       <ReaderShowcase />
-      <StatsSection />
+      <StatsSection stats={publicStats} loading={statsLoading} />
       <TestimonialsSection />
       <CTASection />
       <FooterSection />

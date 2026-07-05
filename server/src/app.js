@@ -82,12 +82,16 @@ const authRoute = require("./routes/authRoutes");
 const userRoute = require("./routes/userRoutes");
 const bookRoute = require("./routes/bookRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const publicRoutes = require("./routes/publicRoutes");
 const { initCronJobs } = require("./services/cronService");
 
 app.use("/auth", authLimiter, authRoute);
 app.use("/user", userRoute);
 app.use("/lib", bookRoute);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/public", publicRoutes);
 
 const { protect } = require("./middleware/authMiddleware");
 const notificationService = require("./services/notificationService");

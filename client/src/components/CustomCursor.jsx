@@ -4,11 +4,35 @@ import { motion } from 'framer-motion';
 const CustomCursor = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const [canUseCursor, setCanUseCursor] = useState(false);
 
   useEffect(() => {
-    // Check if device has a fine pointer (mouse)
-    const isMobile = window.matchMedia("(pointer: coarse)").matches;
-    if (isMobile) return;
+    const cursorMedia = window.matchMedia(
+      '(min-width: 769px) and (pointer: fine) and (hover: hover)'
+    );
+    const reducedMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const updateCursorCapability = () => {
+      const enabled = cursorMedia.matches && !reducedMotionMedia.matches;
+      setCanUseCursor(enabled);
+      if (!enabled) {
+        document.body.style.cursor = '';
+      }
+    };
+
+    updateCursorCapability();
+    cursorMedia.addEventListener('change', updateCursorCapability);
+    reducedMotionMedia.addEventListener('change', updateCursorCapability);
+
+    return () => {
+      cursorMedia.removeEventListener('change', updateCursorCapability);
+      reducedMotionMedia.removeEventListener('change', updateCursorCapability);
+      document.body.style.cursor = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canUseCursor) return;
 
     const updateMousePosition = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -31,14 +55,11 @@ const CustomCursor = () => {
     return () => {
       window.removeEventListener('mousemove', updateMousePosition);
       window.removeEventListener('mouseover', handleMouseOver);
-      document.body.style.cursor = 'auto';
+      document.body.style.cursor = '';
     };
-  }, []);
+  }, [canUseCursor]);
 
-  // Don't render on mobile devices
-  if (typeof window !== 'undefined' && window.matchMedia("(pointer: coarse)").matches) {
-    return null;
-  }
+  if (!canUseCursor) return null;
 
   return (
     <>

@@ -57,9 +57,11 @@ function App() {
             <Route path="/feedback" element={<FeedbackPage />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<OverviewPage />} />
               <Route path="/overview" element={<OverviewPage />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/reading-stats" element={<ReadingStatsPage />} />
               <Route path="/stats" element={<ReadingStatsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />

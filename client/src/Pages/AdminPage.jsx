@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,14 +8,53 @@ import UploadBookView from '../components/admin/UploadBookView';
 import MembersView from '../components/admin/MembersView';
 import ActivityView from '../components/admin/ActivityView';
 import SystemSettingsView from '../components/admin/SystemSettingsView';
-import { getStoredSession } from '@/lib/api';
+import api, { ENDPOINTS, getStoredSession } from '@/lib/api';
+import AdminAnalyticsOverview from '../components/admin/AdminAnalyticsOverview';
+import { normalizeAdminAnalytics } from '@/lib/adminAnalytics';
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState('manage');
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState('');
+
+  const { user } = getStoredSession();
+
+  const tabs = [
+    { id: 'manage', label: 'Library', icon: Book, desc: 'Manage catalog' },
+    { id: 'upload', label: 'Upload', icon: Upload, desc: 'Add new books' },
+    { id: 'users', label: 'Members', icon: Users, desc: 'User accounts' },
+    { id: 'activity', label: 'Activity', icon: Activity, desc: 'System logs' },
+    { id: 'settings', label: 'System', icon: Settings, desc: 'Config' }
+  ];
+
+  const fetchAnalytics = useCallback(async () => {
+    if (user?.role !== 'admin') {
+      setAnalyticsLoading(false);
+      return;
+    }
+
+    setAnalyticsLoading(true);
+    setAnalyticsError('');
+
+    try {
+      const payload = await api.get(ENDPOINTS.ADMIN.ANALYTICS);
+      setAnalytics(normalizeAdminAnalytics(payload));
+    } catch (err) {
+      console.error('Failed to load admin analytics:', err);
+      setAnalytics(null);
+      setAnalyticsError(err.message || 'Failed to load admin analytics.');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   // Verify role explicitly (redundant but safe)
-  const { user } = getStoredSession();
   if (user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] flex items-center justify-center p-6">
@@ -28,31 +67,21 @@ const AdminPage = () => {
     );
   }
 
-  const tabs = [
-    { id: 'manage', label: 'Library', icon: Book, desc: 'Manage catalog' },
-    { id: 'upload', label: 'Upload', icon: Upload, desc: 'Add new books' },
-    { id: 'users', label: 'Members', icon: Users, desc: 'User accounts' },
-    { id: 'activity', label: 'Activity', icon: Activity, desc: 'System logs' },
-    { id: 'settings', label: 'System', icon: Settings, desc: 'Config' }
-  ];
-
   return (
     <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300 selection:bg-[#c97b6b] selection:text-white">
       <Sidebar />
 
-      <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-20">
+      <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
         <DashboardNavbar />
 
         <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-10 pt-10">
 
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 bg-[#c97b6b]/10 text-[#c97b6b] rounded-full text-[10px] font-bold tracking-widest uppercase">Admin Panel</span>
-              <span className="text-black/40 dark:text-white/40 text-sm">v2.1.0</span>
-            </div>
-            <h1 className="text-4xl font-serif text-black dark:text-white tracking-tight">System Control</h1>
-          </div>
+          <AdminAnalyticsOverview
+            analytics={analytics}
+            loading={analyticsLoading}
+            error={analyticsError}
+            onRefresh={fetchAnalytics}
+          />
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {/* Navigation - horizontal scroll on mobile, vertical sidebar on desktop */}
@@ -125,7 +154,7 @@ const AdminPage = () => {
                     {activeTab === 'manage' && <ManageBooksView searchQuery={catalogSearch} />}
                     {activeTab === 'upload' && <UploadBookView />}
                     {activeTab === 'users' && <MembersView />}
-                    {activeTab === 'activity' && <ActivityView />}
+                    {activeTab === 'activity' && <ActivityView analytics={analytics} loading={analyticsLoading} />}
                     {activeTab === 'settings' && <SystemSettingsView />}
                   </div>
                 </motion.div>
