@@ -274,20 +274,32 @@ const DashboardNavbar = ({ hideLogo = true }) => {
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 z-[210] flex w-screen flex-col border-r border-[#e8e4db] bg-[#fffaf3] pt-8 pb-8 shadow-2xl dark:border-white/[0.08] dark:bg-[#0f1726] sm:w-[340px] lg:hidden"
+              transition={{ type: 'spring', damping: 28, stiffness: 230 }}
+              className="fixed inset-y-0 left-0 z-[210] flex w-[min(86vw,320px)] flex-col overflow-hidden border-r border-[#e8e4db] bg-[#fffaf3] text-[#111827] shadow-[24px_0_80px_rgba(0,0,0,0.32)] dark:border-white/[0.08] dark:bg-[#070b12] dark:text-white lg:hidden"
             >
-              <div className="mb-8 flex items-center justify-between px-6 sm:px-8">
+              <div
+                className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-5"
+                style={{
+                  paddingTop: 'max(1.25rem, env(safe-area-inset-top))',
+                  paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))',
+                }}
+              >
+              <div className="mb-7 flex items-start justify-between gap-4 px-1">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#111827] tracking-wide dark:text-white">ReadNest</h1>
+                  <h1 className="text-3xl font-bold tracking-normal text-[#111827] dark:text-white">ReadNest</h1>
                   <p className="text-[10px] tracking-[0.2em] text-[#ff9c7a] mt-1 uppercase opacity-80">Literary Sanctuary</p>
                 </div>
-                <button onClick={() => setMobileNavOpen(false)} className="text-slate-500 hover:text-[#111827] dark:text-slate-400 dark:hover:text-white">
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#e8e4db] bg-white/70 text-slate-500 transition hover:border-[#c97b6b]/35 hover:text-[#111827] dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-400 dark:hover:text-white"
+                  aria-label="Close navigation menu"
+                >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <nav className="mx-4 flex-1 space-y-2 rounded-[28px] border border-[#e8e4db] bg-white/70 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-white/[0.08] dark:bg-[#0b111b] dark:shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+              <nav className="space-y-2 overflow-y-auto rounded-2xl border border-[#e8e4db] bg-white/70 p-2 shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-white/[0.08] dark:bg-[#0b111b] dark:shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
                 {[
                   { icon: Home, label: 'Home', path: '/overview' },
                   { icon: Library, label: 'My Library', path: '/library' },
@@ -300,7 +312,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
                       key={item.path}
                       to={item.path}
                       onClick={() => setMobileNavOpen(false)}
-                      className={({ isActive }) => `flex items-center px-4 py-3 rounded-lg transition-all group relative ${isActive ? 'bg-[#ff7a4f]/12 text-[#c96f5c] dark:text-[#ff9c7a]' : 'text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white'}`}
+                      className={({ isActive }) => `relative flex min-h-12 items-center rounded-xl px-4 py-3 transition-all group ${isActive ? 'bg-[#ff7a4f]/12 text-[#c96f5c] dark:text-[#ff9c7a]' : 'text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white'}`}
                     >
                       {({ isActive }) => (
                         <>
@@ -316,7 +328,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
                   <NavLink
                     to="/admin"
                     onClick={() => setMobileNavOpen(false)}
-                    className={({ isActive }) => `flex items-center px-4 py-3 rounded-lg transition-all group relative ${isActive ? 'bg-[#ff7a4f]/12 text-[#ff9c7a]' : 'text-[#ff9c7a] hover:bg-[#ff7a4f]/10 hover:text-[#ff9c7a]'}`}
+                    className={({ isActive }) => `relative flex min-h-12 items-center rounded-xl px-4 py-3 transition-all group ${isActive ? 'bg-[#ff7a4f]/12 text-[#ff9c7a]' : 'text-[#ff9c7a] hover:bg-[#ff7a4f]/10 hover:text-[#ff9c7a]'}`}
                   >
                     {({ isActive }) => (
                       <>
@@ -329,9 +341,9 @@ const DashboardNavbar = ({ hideLogo = true }) => {
                 )}
               </nav>
 
-              <div className="px-6 mt-auto flex flex-col gap-6">
+              <div className="mt-5 border-t border-[#e8e4db] pt-4 dark:border-white/[0.08]">
                 <div className="space-y-1">
-                  <NavLink to="/settings" onClick={() => setMobileNavOpen(false)} className="flex items-center px-4 py-3 rounded-lg text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] text-sm font-medium tracking-wide dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white">
+                  <NavLink to="/settings" onClick={() => setMobileNavOpen(false)} className="flex min-h-12 items-center rounded-xl px-4 py-3 text-sm font-medium tracking-wide text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white">
                     <Settings className="w-4 h-4 mr-4" /> Settings
                   </NavLink>
                   <button
@@ -339,11 +351,12 @@ const DashboardNavbar = ({ hideLogo = true }) => {
                       setMobileNavOpen(false);
                       navigate('/feedback');
                     }}
-                    className="w-full flex items-center px-4 py-3 rounded-lg text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] text-sm font-medium tracking-wide dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white"
+                    className="flex min-h-12 w-full items-center rounded-xl px-4 py-3 text-sm font-medium tracking-wide text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white"
                   >
                     <HelpCircle className="w-4 h-4 mr-4" /> Support
                   </button>
                 </div>
+              </div>
               </div>
             </motion.div>
           </>
