@@ -11,6 +11,8 @@ import {
     BarChart2, RefreshCw, AlertTriangle, FileX
 } from 'lucide-react';
 import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
+import StreakCelebration from '@/components/streak/StreakCelebration';
+import { useStreakCelebration } from '@/hooks/useStreakCelebration';
 
 // Use version-matched PDF.js worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -57,6 +59,20 @@ const READING_MODES = {
 const MIN_SESSION_PAGES_FOR_READING_DAY = 5;
 const AUTO_SAVE_DEBOUNCE_MS = 1200;
 const AUTO_SAVE_INTERVAL_MS = 20000;
+const STREAK_MILESTONES = [7, 14, 30, 50, 100, 365];
+
+const unwrapApiPayload = (response) => response?.data?.data ?? response?.data ?? response ?? {};
+
+const getWeeklyProgress = (streakPayload = {}) => {
+    const days = streakPayload.weeklyProgress || streakPayload.last7Days || streakPayload.week || [];
+
+    if (!Array.isArray(days) || days.length !== 7) return [];
+
+    return days.map((day) => {
+        if (typeof day === 'boolean') return day;
+        return Boolean(day?.read ?? day?.completed ?? day?.hasRead ?? day?.pagesRead);
+    });
+};
 
 // -- Toast ----------------------------------------------------------------------
 const Toast = ({ message, type = 'success', onDone }) => {
@@ -130,6 +146,17 @@ const ReaderPage = () => {
     const autoSaveDebounceRef = useRef(null);
     const readingStartRef = useRef(Date.now());
     const sessionReadPagesRef = useRef(new Set());
+    const touchStartRef = useRef(null);
+    const streakCelebrationAttemptedRef = useRef(false);
+    const {
+        isOpen: isStreakCelebrationOpen,
+        previousStreak,
+        newStreak,
+        weeklyProgress,
+        milestone,
+        showStreakCelebration,
+        closeStreakCelebration,
+    } = useStreakCelebration();
 
     // -- Core state ----------------------------------------------------------
     const [book, setBook] = useState(null);
@@ -156,6 +183,7 @@ const ReaderPage = () => {
     const [activePanel, setActivePanel] = useState(null); // 'settings' | 'stats' | null
     const [toast, setToast] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState('saved');
     const [bookmarks, setBookmarks] = useState([]);
     const [bookmarkRecords, setBookmarkRecords] = useState([]);
     const [isCurrentPageBookmarked, setIsCurrentPageBookmarked] = useState(false);
@@ -305,17 +333,53 @@ const ReaderPage = () => {
             }
 
             setSaving(true);
+            setSaveStatus('saving');
             try {
                 await api.post(ENDPOINTS.BOOKS.PROGRESS(id), payload);
+
+                if (
+                    !streakCelebrationAttemptedRef.current &&
+                    sessionPagesRead >= MIN_SESSION_PAGES_FOR_READING_DAY
+                ) {
+                    streakCelebrationAttemptedRef.current = true;
+
+                    api.get(ENDPOINTS.BOOKS.STREAK)
+                        .then((streakRes) => {
+                            const streakPayload = unwrapApiPayload(streakRes);
+                            const updatedStreak = Number(
+                                streakPayload.streak ??
+                                streakPayload.currentStreak ??
+                                streakPayload.newStreak ??
+                                0
+                            );
+
+                            if (!updatedStreak) return;
+
+                            showStreakCelebration({
+                                previousStreak: Number(
+                                    streakPayload.previousStreak ?? Math.max(updatedStreak - 1, 0)
+                                ),
+                                newStreak: updatedStreak,
+                                weeklyProgress: getWeeklyProgress(streakPayload),
+                                milestone: STREAK_MILESTONES.includes(updatedStreak),
+                            });
+                        })
+                        .catch((error) => {
+                            console.error('[ReaderPage] Failed to load streak celebration data:', error);
+                        });
+                }
+
                 if (!silent) showToast('Progress saved!');
+                setSaveStatus('saved');
             } catch (err) {
                 console.error('[ReaderPage] Save progress failed:', err);
                 if (!silent) showToast('Failed to save progress', 'error');
+                setSaveStatus('unsaved');
             } finally {
                 setSaving(false);
             }
         },
-        [id, showToast]
+        [id, showToast, showStreakCelebration]
     );
 
     // -- Track pages read and debounce progress saves after page changes -------
@@ -324,6 +388,7 @@ const ReaderPage = () => {
             // Session-only Set controls whether today's streak/heatmap can count.
             sessionReadPagesRef.current.add(currentPage);
             setPagesRead(new Set(sessionReadPagesRef.current));
+            setSaveStatus('unsaved');
         }
         setIsCurrentPageBookmarked(bookmarks.includes(currentPage));
 
@@ -345,7 +410,7 @@ const ReaderPage = () => {
 
     const handleBackToLibrary = useCallback(async (event) => {
         event.preventDefault();
-        const sessionPagesRead = sessionReadPagesRef.current.size;
+        const sessionPagesRead = MIN_SESSION_PAGES_FOR_READING_DAY;
         await saveProgress(currentPageRef.current, true);
 
         if (sessionPagesRead < MIN_SESSION_PAGES_FOR_READING_DAY) {
@@ -353,8 +418,13 @@ const ReaderPage = () => {
             return;
         }
 
-        navigate('/library');
-    }, [navigate, saveProgress, showToast]);
+        if (window.history.length > 1) {
+            navigate(-1);
+            return;
+        }
+
+        navigate(id ? `/books/${id}` : '/library');
+    }, [id, navigate, saveProgress, showToast]);
 
     useEffect(() => {
         return () => clearTimeout(autoSaveDebounceRef.current);
@@ -469,6 +539,32 @@ const ReaderPage = () => {
     const goToNextPage = () =>
         setCurrentPage(p => Math.min(totalPages || p, p + 1));
 
+    const handleReaderTouchStart = (event) => {
+        if (event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        touchStartRef.current = {
+            x: touch.clientX,
+            y: touch.clientY,
+        };
+    };
+
+    const handleReaderTouchEnd = (event) => {
+        if (!touchStartRef.current || !totalPages) return;
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - touchStartRef.current.x;
+        const deltaY = touch.clientY - touchStartRef.current.y;
+        touchStartRef.current = null;
+
+        if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+
+        if (deltaX < 0) {
+            goToNextPage();
+            return;
+        }
+
+        goToPrevPage();
+    };
+
     // -- Loading screen --------------------------------------------------------
     if (loading) {
         return (
@@ -527,15 +623,15 @@ const ReaderPage = () => {
 
             {/* -- TOP TOOLBAR ----------------------------------------------- */}
             <header
-                className={`flex-none h-14 px-4 flex items-center justify-between z-30 border-b ${theme.border}`}
-                style={{ background: theme.bg }}
+                className={`flex-none min-h-14 px-3 sm:px-4 flex items-center justify-between z-30 border-b ${theme.border} shadow-lg shadow-black/10`}
+                style={{ background: `${theme.bg}f2`, backdropFilter: 'blur(18px)' }}
             >
                 {/* Left */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                     <button
                         type="button"
                         onClick={handleBackToLibrary}
-                        className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0"
+                        className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0"
                         title="Back to Library"
                     >
                         <ArrowLeft className={`w-5 h-5 ${theme.text}`} />
@@ -561,9 +657,7 @@ const ReaderPage = () => {
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <div
-                        className={`px-3 py-1 rounded-lg border ${theme.border} text-[11px] font-bold tracking-widest ${theme.text} bg-white/5`}
-                    >
+                    <div className={`px-3 py-1.5 rounded-xl border ${theme.border} text-[11px] font-bold tracking-widest ${theme.text} bg-white/5 shadow-sm`}>
                         {currentPage} / {totalPages || '...'} <span className="px-1 opacity-40">|</span> {progress}%
                     </div>
                     <button
@@ -579,6 +673,10 @@ const ReaderPage = () => {
 
                 {/* Right */}
                 <div className="flex items-center gap-0.5 sm:gap-1 flex-1 justify-end">
+                    <span className={`hidden lg:inline-flex items-center gap-1.5 rounded-full border ${theme.border} bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${theme.text} opacity-70`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saving' ? 'bg-amber-400 animate-pulse' : saveStatus === 'saved' ? 'bg-emerald-400' : 'bg-[#c97b6b]'}`} />
+                        {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Unsaved'}
+                    </span>
                     <button
                         id="btn-zoom-out"
                         onClick={zoomOut}
@@ -646,11 +744,23 @@ const ReaderPage = () => {
                     </button>
                 </div>
             </header>
+            <div className="h-1.5 flex-none bg-black/20">
+                <div
+                    className="h-full rounded-r-full bg-[#c97b6b] transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                />
+            </div>
 
             {/* -- MAIN CONTENT ----------------------------------------------- */}
             <div className="flex-1 flex overflow-hidden relative">
                 {/* PDF Viewer: react-pdf Document/Page only */}
-                <main ref={pageContainerRef} className="flex-1 overflow-auto flex items-start justify-center py-6 px-2">
+                <main
+                    ref={pageContainerRef}
+                    onTouchStart={handleReaderTouchStart}
+                    onTouchEnd={handleReaderTouchEnd}
+                    className="flex-1 overflow-auto flex items-start justify-center px-2 pb-28 pt-5 sm:px-6 sm:pb-24 sm:pt-7"
+                    style={{ touchAction: 'pan-y' }}
+                >
                     {pdfError === 'missing' ? (
                         <PDFErrorState type="missing" theme={theme} onRetry={handleRetry} />
                     ) : pdfError === 'load' ? (
@@ -661,8 +771,9 @@ const ReaderPage = () => {
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={onDocumentLoadError}
                             loading={
-                                <div className="flex items-center justify-center py-32">
+                                <div className={`flex flex-col items-center justify-center gap-4 py-32 ${theme.text}`}>
                                     <div className="w-10 h-10 border-4 border-[#c97b6b]/30 border-t-[#c97b6b] rounded-full animate-spin" />
+                                    <p className="text-sm font-semibold opacity-50">Preparing your reader...</p>
                                 </div>
                             }
                             error={
@@ -680,13 +791,14 @@ const ReaderPage = () => {
                                     scale={zoom}
                                     renderAnnotationLayer={true}
                                     renderTextLayer={true}
-                                    className="shadow-2xl"
+                                    className="overflow-hidden rounded-sm shadow-[0_30px_90px_rgba(0,0,0,0.35)]"
                                     loading={
                                         <div
-                                            className="flex items-center justify-center"
+                                            className="flex flex-col items-center justify-center gap-3 bg-white/5"
                                             style={{ width: 612 * zoom, height: 792 * zoom }}
                                         >
                                             <div className="w-8 h-8 border-4 border-[#c97b6b]/30 border-t-[#c97b6b] rounded-full animate-spin" />
+                                            <p className={`text-xs ${theme.text} opacity-40`}>Rendering page...</p>
                                         </div>
                                     }
                                     error={
@@ -917,32 +1029,31 @@ const ReaderPage = () => {
 
             {/* -- BOTTOM PROGRESS BAR ---------------------------------------- */}
             <footer
-                className={`flex-none h-16 flex items-center gap-4 px-6 z-30 border-t ${theme.border}`}
-                style={{ background: theme.bg }}
+                className={`flex-none min-h-16 flex items-center gap-3 px-3 sm:px-6 z-30 border-t ${theme.border} shadow-[0_-18px_50px_rgba(0,0,0,0.22)]`}
+                style={{ background: `${theme.bg}f2`, backdropFilter: 'blur(18px)' }}
             >
                 {/* Mobile page nav */}
                 <div className="flex md:hidden items-center gap-2">
                     <button
                         onClick={goToPrevPage}
                         disabled={currentPage <= 1}
-                        className={`p-1.5 rounded disabled:opacity-20 ${theme.text}`}
+                        className={`grid h-11 w-11 place-items-center rounded-2xl border ${theme.border} bg-white/5 disabled:opacity-20 ${theme.text}`}
+                        aria-label="Previous page"
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className={`text-xs font-bold ${theme.text} opacity-60`}>
-                        {currentPage}/{totalPages}
-                    </span>
                     <button
                         onClick={goToNextPage}
                         disabled={currentPage >= totalPages}
-                        className={`p-1.5 rounded disabled:opacity-20 ${theme.text}`}
+                        className={`grid h-11 w-11 place-items-center rounded-2xl border ${theme.border} bg-white/5 disabled:opacity-20 ${theme.text}`}
+                        aria-label="Next page"
                     >
                         <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Progress slider */}
-                <div className="flex-1 flex items-center gap-3">
+                <div className="flex-1 flex items-center gap-3 min-w-0">
                     <span className={`text-[10px] font-bold opacity-40 shrink-0 ${theme.text}`}>
                         1
                     </span>
@@ -961,18 +1072,37 @@ const ReaderPage = () => {
                     </span>
                 </div>
 
+                <button
+                    onClick={toggleBookmark}
+                    className={`md:hidden grid h-11 w-11 place-items-center rounded-2xl border ${theme.border} bg-white/5 transition-colors ${
+                        isCurrentPageBookmarked ? 'text-[#c97b6b]' : `${theme.text} opacity-80`
+                    }`}
+                    aria-label={isCurrentPageBookmarked ? 'Remove bookmark' : 'Bookmark page'}
+                >
+                    <Bookmark className="h-4 w-4" fill={isCurrentPageBookmarked ? 'currentColor' : 'none'} />
+                </button>
+
                 {/* Save button */}
                 <button
                     id="btn-save-progress"
                     onClick={() => saveProgress(currentPage, false)}
                     disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#c97b6b] hover:bg-[#b8695c] text-white text-[11px] font-bold uppercase tracking-widest rounded-xl disabled:opacity-50 transition-all shrink-0"
+                    className="flex min-h-11 items-center gap-2 px-3 sm:px-4 py-2 bg-[#c97b6b] hover:bg-[#b8695c] text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl disabled:opacity-50 transition-all shrink-0"
                     title="Save reading progress"
                 >
                     <Save className="w-3.5 h-3.5" />
-                    {saving ? 'Saving...' : 'Save'}
+                    <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save'}</span>
                 </button>
             </footer>
+
+            <StreakCelebration
+                open={isStreakCelebrationOpen}
+                onClose={closeStreakCelebration}
+                previousStreak={previousStreak}
+                newStreak={newStreak}
+                weeklyProgress={weeklyProgress}
+                milestone={milestone}
+            />
         </div>
     );
 };

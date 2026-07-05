@@ -7,7 +7,6 @@ gsap.registerPlugin(ScrollTrigger);
 const LandingGsapEffects = () => {
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isMobile = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches;
     if (reduceMotion) return;
 
     const ctx = gsap.context(() => {
@@ -33,36 +32,32 @@ const LandingGsapEffects = () => {
         );
       });
 
-      if (!isMobile) {
-        gsap.utils.toArray("[data-gsap-parallax]").forEach((el) => {
-          const speed = Number(el.dataset.speed || 60);
+      gsap.utils.toArray("[data-gsap-parallax]").forEach((el) => {
+        const speed = Number(el.dataset.speed || 60);
 
-          gsap.to(el, {
-            y: -speed,
-            ease: "none",
-            scrollTrigger: {
-              trigger: el,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 1.2,
-            },
-          });
+        gsap.to(el, {
+          y: -speed,
+          ease: "none",
+          scrollTrigger: {
+            trigger: el,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          },
         });
-      }
+      });
 
-      if (!isMobile) {
-        gsap.utils.toArray("[data-gsap-glow]").forEach((glow, index) => {
-          gsap.to(glow, {
-            x: index % 2 === 0 ? 60 : -60,
-            y: index % 2 === 0 ? -35 : 35,
-            scale: 1.08,
-            duration: 5 + index,
-            ease: "sine.inOut",
-            repeat: -1,
-            yoyo: true,
-          });
+      gsap.utils.toArray("[data-gsap-glow]").forEach((glow, index) => {
+        gsap.to(glow, {
+          x: index % 2 === 0 ? 60 : -60,
+          y: index % 2 === 0 ? -35 : 35,
+          scale: 1.08,
+          duration: 5 + index,
+          ease: "sine.inOut",
+          repeat: -1,
+          yoyo: true,
         });
-      }
+      });
 
       const heroWords = document.querySelectorAll("[data-hero-word]");
 

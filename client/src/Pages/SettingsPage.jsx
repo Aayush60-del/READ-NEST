@@ -1,31 +1,31 @@
-import ReaderCharacterMotion from "@/components/visuals/ReaderCharacterMotion";
 import React, { useState } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { motion } from 'framer-motion';
-import { User, Lock, Trash2, LogOut, Sun, Moon, Eye, EyeOff, CheckCircle2, AlertCircle, Bell } from 'lucide-react';
+import { User, Lock, Trash2, LogOut, Sun, Moon, Eye, EyeOff, CheckCircle2, AlertCircle, Bell, Palette, Shield, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api, { ENDPOINTS, clearSession, getStoredSession } from '@/lib/api';
 import { requestForToken } from '@/config/firebase';
 
 // ---- Section Wrapper ----
-const Section = ({ title, description, icon: Icon, accentColor = '#c97b6b', children, delay = 0 }) => (
+const Section = ({ id, title, description, icon: Icon, accentColor = '#c97b6b', children, delay = 0 }) => (
   <motion.div
+    id={id}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4 }}
-    className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-[#243040]/50 rounded-2xl overflow-hidden"
+    className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-white/5 rounded-[28px] overflow-hidden shadow-sm scroll-mt-28"
   >
-    <div className="px-6 py-5 border-b border-[#e8e4db] dark:border-[#243040]/50 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${accentColor}18` }}>
+    <div className="px-5 sm:px-6 py-5 border-b border-[#e8e4db] dark:border-white/5 flex items-center gap-4">
+      <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${accentColor}18` }}>
         <Icon className="w-5 h-5" style={{ color: accentColor }} />
       </div>
       <div>
-        <h2 className="text-base font-bold text-black dark:text-white">{title}</h2>
-        {description && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{description}</p>}
+        <h2 className="text-lg font-semibold text-black dark:text-white">{title}</h2>
+        {description && <p className="text-sm text-black/45 dark:text-white/45 mt-1">{description}</p>}
       </div>
     </div>
-    <div className="p-6">{children}</div>
+    <div className="p-5 sm:p-6">{children}</div>
   </motion.div>
 );
 
@@ -41,7 +41,7 @@ const Field = ({ label, id, type = 'text', value, onChange, placeholder, disable
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full h-11 bg-[#fcf9f2] dark:bg-[#0f1419] border border-[#e8e4db] dark:border-[#243040] rounded-xl px-4 text-sm text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/20 focus:outline-none focus:border-[#c97b6b] dark:focus:border-[#c97b6b] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full h-12 bg-[#fcf9f2] dark:bg-[#0f1419] border border-[#e8e4db] dark:border-[#243040] rounded-2xl px-4 text-sm text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/20 focus:outline-none focus:border-[#c97b6b] dark:focus:border-[#c97b6b] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       />
       {rightElement && <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightElement}</div>}
     </div>
@@ -69,7 +69,7 @@ const StatusMessage = ({ status }) => {
 };
 
 const Toggle = ({ label, description, checked, onChange }) => (
-  <div className="flex items-center justify-between p-4 bg-[#fcf9f2] dark:bg-[#0f1419] rounded-xl border border-[#e8e4db] dark:border-[#243040]/50">
+  <div className="flex items-center justify-between gap-4 p-4 bg-[#fcf9f2] dark:bg-[#0f1419] rounded-2xl border border-[#e8e4db] dark:border-[#243040]/50">
     <div>
       <p className="text-sm font-semibold text-black dark:text-white">{label}</p>
       {description && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{description}</p>}
@@ -261,6 +261,13 @@ const SettingsPage = () => {
   };
 
   const initial = (user?.name || 'R').charAt(0).toUpperCase();
+  const settingsNav = [
+    { id: 'profile', label: 'Profile', icon: UserRound },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'danger-zone', label: 'Danger Zone', icon: Trash2 },
+  ];
 
   return (
     <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
@@ -269,22 +276,58 @@ const SettingsPage = () => {
       <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
         <DashboardNavbar />
 
-        <div className="max-w-[860px] w-full mx-auto px-4 sm:px-10 pt-8 pb-20">
+        <div className="ml-0 mr-auto max-w-[1240px] w-full px-4 sm:px-10 pt-6 pb-20">
 
           {/* Page Header */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-10"
+            className="mb-8 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7"
           >
-            <h1 className="text-3xl font-serif font-bold text-black dark:text-white mb-1">Settings</h1>
-            <p className="text-sm text-black/50 dark:text-white/50">Manage your account and preferences</p>
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-[#c97b6b]">Account center</p>
+                <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white sm:text-4xl">Settings</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55 dark:text-white/55 sm:text-base">
+                  Manage your account, reading preferences, and app experience.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 rounded-3xl border border-[#e8e4db] bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#c97b6b] to-[#a65d50] shadow-lg">
+                  <span className="text-xl font-bold text-white">{initial}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-black dark:text-white">{user?.name || 'Reader'}</p>
+                  <p className="max-w-[220px] truncate text-xs text-black/45 dark:text-white/45">{user?.email || 'No email available'}</p>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
-          <div className="space-y-6">
+          <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
+            <aside className="xl:sticky xl:top-28 xl:self-start">
+              <div className="scrollbar-hide flex gap-2 overflow-x-auto rounded-[28px] border border-[#e8e4db] bg-white p-2 shadow-sm dark:border-white/5 dark:bg-[#161d27] xl:block xl:space-y-1">
+                {settingsNav.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      className="flex min-h-11 shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-black/55 transition hover:bg-[#c97b6b]/10 hover:text-[#c97b6b] dark:text-white/55 dark:hover:text-[#e8a898] xl:w-full"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </a>
+                  );
+                })}
+              </div>
+            </aside>
+
+            <div className="space-y-6">
 
             {/* -- Profile Settings -- */}
-            <Section title="Profile" description="Update your display name and email" icon={User} delay={0.05}>
+            <Section id="profile" title="Profile" description="Update your display name and email" icon={User} delay={0.05}>
               <form onSubmit={handleProfileSave} className="space-y-5">
                 {/* Avatar */}
                 <div className="flex items-center gap-4 pb-4 border-b border-[#e8e4db] dark:border-[#243040]/50">
@@ -334,7 +377,7 @@ const SettingsPage = () => {
             </Section>
 
             {/* -- Change Password -- */}
-            <Section title="Account Security" description="Change your password" icon={Lock} accentColor="#5227FF" delay={0.1}>
+            <Section id="security" title="Account Security" description="Change your password" icon={Lock} accentColor="#5227FF" delay={0.1}>
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <Field
                   label="Current Password"
@@ -401,7 +444,7 @@ const SettingsPage = () => {
             </Section>
 
             {/* -- Notification Settings -- */}
-            <Section title="Notifications" description="Manage your push notifications and alerts" icon={Bell} accentColor="#f59e0b" delay={0.12}>
+            <Section id="notifications" title="Notifications" description="Manage your push notifications and alerts" icon={Bell} accentColor="#f59e0b" delay={0.12}>
               <div className="space-y-4">
                 <Toggle 
                   label="Browser Push Notifications" 
@@ -436,31 +479,48 @@ const SettingsPage = () => {
             </Section>
 
             {/* -- Preferences -- */}
-            <Section title="Preferences" description="Personalize your experience" icon={isDark ? Moon : Sun} accentColor="#2f766d" delay={0.15}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-black dark:text-white">Appearance</p>
-                  <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">
-                    {isDark ? 'Dark mode is active' : 'Light mode is active'}
-                  </p>
-                </div>
+            <Section id="appearance" title="Appearance" description="Personalize your display experience" icon={Palette} accentColor="#2f766d" delay={0.15}>
+              <div className="grid gap-3 sm:grid-cols-2">
                 <button
-                  onClick={toggleTheme}
-                  className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c97b6b] ${
-                    isDark ? 'bg-[#c97b6b]' : 'bg-black/10 dark:bg-white/10'
+                  type="button"
+                  onClick={() => isDark && toggleTheme()}
+                  className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
+                    !isDark
+                      ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
+                      : 'border-[#e8e4db] bg-[#fcf9f2] hover:border-[#c97b6b]/25 dark:border-white/5 dark:bg-[#0f1419]'
                   }`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 flex items-center justify-center ${isDark ? 'translate-x-7' : 'translate-x-0'}`}>
-                    {isDark
-                      ? <Moon className="w-3 h-3 text-[#c97b6b]" />
-                      : <Sun className="w-3 h-3 text-black/50" />}
-                  </span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#c97b6b] shadow-sm dark:bg-white/10">
+                    <Sun className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-black dark:text-white">Light mode</p>
+                    <p className="text-xs text-black/45 dark:text-white/45">Warm, clean reading workspace.</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => !isDark && toggleTheme()}
+                  className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
+                    isDark
+                      ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
+                      : 'border-[#e8e4db] bg-[#fcf9f2] hover:border-[#c97b6b]/25 dark:border-white/5 dark:bg-[#0f1419]'
+                  }`}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#111827] text-[#e8a898] shadow-sm">
+                    <Moon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-black dark:text-white">Dark mode</p>
+                    <p className="text-xs text-black/45 dark:text-white/45">Deep navy interface for focus.</p>
+                  </div>
                 </button>
               </div>
             </Section>
 
             {/* -- Security / Danger Zone -- */}
-            <Section title="Security" description="Session and account management" icon={LogOut} accentColor="#ef4444" delay={0.2}>
+            <Section id="danger-zone" title="Danger Zone" description="Session and account management" icon={LogOut} accentColor="#ef4444" delay={0.2}>
               <div className="space-y-4">
                 {/* Sign Out */}
                 <div className="flex items-center justify-between p-4 bg-[#fcf9f2] dark:bg-[#0f1419] rounded-xl border border-[#e8e4db] dark:border-[#243040]/50">
@@ -515,16 +575,9 @@ const SettingsPage = () => {
               </div>
             </Section>
 
+            </div>
           </div>
         </div>
-      
-      <div className="settings-floating-reader pointer-events-none fixed bottom-6 right-6 z-40 hidden xl:block">
-        <ReaderCharacterMotion
-          size="small"
-          imageClassName="h-[160px]"
-          showBadge={false}
-        />
-      </div>
     </main>
     </div>
   );

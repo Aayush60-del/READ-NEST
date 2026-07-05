@@ -1,54 +1,252 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ArrowUpRight,
+  BookOpen,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Flame,
+  Library,
+  Target,
+  Trophy,
+} from 'lucide-react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
-import { BookOpen, FileText, ChevronLeft, ChevronRight, Flame, Trophy, Zap, ArrowUpRight } from 'lucide-react';
 import api, { ENDPOINTS, getStoredSession } from '@/lib/api';
-import { Link } from 'react-router-dom';
 import { buildLast7Days } from '@/lib/readingInsights';
 import BookCover from '@/components/books/BookCover';
 import BookCard from '@/components/books/BookCard';
 
-// --- Helpers ---
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 };
 
-// --- Streak Flame Component ---
-const StreakFlame = ({ count }) => {
-  const size = count >= 30 ? 'w-12 h-12' : count >= 7 ? 'w-10 h-10' : 'w-9 h-9';
-  const glow = count >= 30
-    ? 'drop-shadow-[0_0_18px_rgba(249,115,22,0.8)]'
-    : count >= 7
-    ? 'drop-shadow-[0_0_12px_rgba(249,115,22,0.5)]'
-    : '';
+const unwrapPayload = (response, fallback) => response?.data?.data ?? response?.data ?? response ?? fallback;
+
+const getBookId = (book) => book?.bookId || book?.book?._id || book?._id;
+
+const getBookTitle = (book) => book?.title || book?.book?.title || 'Untitled book';
+
+const getBookAuthor = (book) => book?.author || book?.book?.author || 'Unknown author';
+
+const getBookCover = (book) =>
+  book?.coverImage || book?.coverUrl || book?.image || book?.thumbnail || book?.book?.coverImage;
+
+const getProgress = (book) => {
+  const value = book?.percentageCompleted ?? book?.progress ?? 0;
+  return Math.min(100, Math.max(0, Number(value) || 0));
+};
+
+const getTodayLabel = () =>
+  new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+
+const StatCard = ({ icon: Icon, label, value, loading, accent = false }) => (
+  <div
+    className={`group flex min-h-[144px] flex-col justify-between rounded-[28px] border p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+      accent
+        ? 'border-[#c97b6b]/25 bg-[#fff4ef] shadow-[#c97b6b]/5 dark:bg-[#241714]'
+        : 'border-[#e8e4db] bg-white shadow-black/[0.03] dark:border-white/5 dark:bg-[#161d27]'
+    }`}
+  >
+    <div
+      className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+        accent
+          ? 'bg-[#c97b6b]/12 text-[#c97b6b]'
+          : 'bg-black/[0.04] text-black/45 dark:bg-white/[0.06] dark:text-white/50'
+      }`}
+    >
+      <Icon className="h-5 w-5" />
+    </div>
+
+    <div>
+      <div className={`text-3xl font-semibold ${accent ? 'text-[#c97b6b]' : 'text-black dark:text-white'}`}>
+        {loading ? '-' : value}
+      </div>
+      <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+        {label}
+      </div>
+    </div>
+  </div>
+);
+
+const SkeletonCard = ({ className = '' }) => (
+  <div className={`animate-pulse rounded-[28px] border border-[#e8e4db] bg-white/70 dark:border-white/5 dark:bg-[#161d27]/70 ${className}`} />
+);
+
+const EmptyState = ({ icon: Icon = BookOpen, title, message, cta, to }) => (
+  <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[28px] border border-dashed border-[#d7cfc4] bg-white/70 p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#161d27]/70">
+    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c97b6b]/10 text-[#c97b6b]">
+      <Icon className="h-5 w-5" />
+    </div>
+    <h3 className="text-lg font-semibold text-black dark:text-white">{title}</h3>
+    <p className="mt-2 max-w-sm text-sm leading-6 text-black/55 dark:text-white/55">{message}</p>
+    {to && cta ? (
+      <Link
+        to={to}
+        className="mt-5 rounded-2xl bg-[#c97b6b] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]"
+      >
+        {cta}
+      </Link>
+    ) : null}
+  </div>
+);
+
+const ContinueReadingHero = ({ book, loading }) => {
+  if (loading) {
+    return <SkeletonCard className="min-h-[430px] lg:min-h-[500px]" />;
+  }
+
+  if (!book) {
+    return (
+      <EmptyState
+        icon={Library}
+        title="No active book yet"
+        message="Start a book from Discover and it will appear here when you are ready to continue."
+        cta="Explore books"
+        to="/discover"
+      />
+    );
+  }
+
+  const title = getBookTitle(book);
+  const author = getBookAuthor(book);
+  const progress = getProgress(book);
+  const currentPage = Number(book?.currentPage || 0);
+  const totalPages = Number(book?.totalPages || book?.book?.totalPages || 0);
+  const bookId = getBookId(book);
 
   return (
-    <div className={`${size} ${glow} rounded-full bg-orange-500/15 text-orange-500 flex items-center justify-center transition-all duration-500`}>
-      <Flame
-        className="w-[70%] h-[70%]"
-        style={{ animation: count >= 7 ? 'flamePulse 2s ease-in-out infinite' : 'none' }}
-      />
-    </div>
+    <section className="overflow-hidden rounded-[32px] border border-[#e8e4db] bg-white shadow-[0_24px_80px_rgba(31,41,55,0.08)] dark:border-white/5 dark:bg-[#161d27] dark:shadow-black/20">
+      <div className="grid min-h-[430px] lg:grid-cols-[0.92fr_1.08fr]">
+        <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden bg-[#f2e8dc] p-8 dark:bg-[#111827]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_22%,rgba(201,123,107,0.26),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.22),transparent)] dark:bg-[radial-gradient(circle_at_28%_22%,rgba(201,123,107,0.22),transparent_34%)]" />
+          <div className="relative aspect-[2/3] h-[260px] max-h-[80%] overflow-hidden rounded-2xl border border-white/50 bg-[#d3bca8] shadow-2xl dark:border-white/10 dark:bg-[#1c2535] sm:h-[320px]">
+            <BookCover
+              src={getBookCover(book)}
+              title={title}
+              author={author}
+              priority
+              rounded="rounded-2xl"
+              imageClassName="object-contain bg-[#f2e8dc] dark:bg-[#1c2535]"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between gap-8 p-6 sm:p-8 lg:p-10">
+          <div>
+            <span className="inline-flex rounded-full bg-[#c97b6b]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#c97b6b]">
+              Continue reading
+            </span>
+            <h2 className="mt-5 text-3xl font-semibold leading-tight text-black dark:text-white sm:text-4xl">
+              {title}
+            </h2>
+            <p className="mt-3 text-sm font-medium text-black/55 dark:text-white/55">{author}</p>
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/40 dark:text-white/40">
+                  Progress
+                </p>
+                <p className="mt-1 text-3xl font-semibold text-black dark:text-white">{progress}%</p>
+              </div>
+              <p className="text-right text-xs font-semibold text-black/50 dark:text-white/50">
+                {currentPage || '-'}{totalPages ? ` / ${totalPages}` : ''} pages
+              </p>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div className="h-full rounded-full bg-[#c97b6b] transition-all duration-500" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+
+          <Link
+            to={bookId ? `/books/${bookId}/read` : '/library'}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#3b2a1a] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#2f2115] dark:bg-[#d6d4d0] dark:text-black dark:hover:bg-white"
+          >
+            Resume Reading
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 };
 
-// --- Empty State ---
-const EmptyCard = ({ message, linkTo, linkText }) => (
-  <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent rounded-[24px] p-10 flex flex-col items-center justify-center shadow-lg mb-12 min-h-[200px] transition-colors duration-300 gap-4">
-    <BookOpen className="w-10 h-10 text-black/20 dark:text-white/20" />
-    <p className="text-black/50 dark:text-white/50 text-center font-serif text-lg">{message}</p>
-    {linkTo && (
-      <Link
-        to={linkTo}
-        className="px-6 py-2.5 rounded-xl bg-[#c97b6b] text-white text-xs font-bold tracking-widest uppercase hover:bg-[#b8695c] transition-colors"
-      >
-        {linkText}
-      </Link>
-    )}
-  </div>
+const StreakCard = ({ streak, last7Days, hasStreakData, loading }) => {
+  if (loading) return <SkeletonCard className="min-h-[240px]" />;
+
+  return (
+    <section className="rounded-[32px] border border-[#e8e4db] bg-[#f5efdf] p-6 shadow-sm dark:border-white/5 dark:bg-[#1c2535]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#c97b6b]">Today</p>
+          <h2 className="mt-3 text-3xl font-semibold text-black dark:text-white">{streak} day streak</h2>
+          <p className="mt-2 text-sm leading-6 text-black/55 dark:text-white/55">
+            {hasStreakData ? 'Pick up your book and protect your reading rhythm.' : 'Start reading to build your streak.'}
+          </p>
+        </div>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#c97b6b]/15 text-[#c97b6b]">
+          <Flame className="h-6 w-6" />
+        </div>
+      </div>
+
+      {hasStreakData && last7Days.length ? (
+        <div className="mt-7 grid grid-cols-7 gap-2">
+          {last7Days.map((day, index) => (
+            <div key={`${day.date || day.dayLabel}-${index}`} className="flex flex-col items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                {day.dayLabel}
+              </span>
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-2xl border transition-colors ${
+                  day.read
+                    ? 'border-[#c97b6b]/30 bg-[#c97b6b] text-white shadow-lg shadow-[#c97b6b]/20'
+                    : day.isToday
+                    ? 'border-[#c97b6b]/35 bg-white/70 text-[#c97b6b] dark:bg-white/5'
+                    : 'border-black/5 bg-white/60 text-black/25 dark:border-white/5 dark:bg-white/5 dark:text-white/25'
+                }`}
+              >
+                {day.read ? <Flame className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-7 rounded-3xl border border-[#e8e4db] bg-white/60 p-4 text-sm text-black/55 dark:border-white/5 dark:bg-black/10 dark:text-white/55">
+          Read 5 pages today to count your reading day.
+        </div>
+      )}
+    </section>
+  );
+};
+
+const GoalCard = () => (
+  <section className="rounded-[32px] border border-[#e8e4db] bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#161d27]">
+    <div className="flex items-start gap-4">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#c97b6b]/10 text-[#c97b6b]">
+        <Target className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 dark:text-white/40">
+          Reading day
+        </p>
+        <h3 className="mt-2 text-xl font-semibold text-black dark:text-white">Read 5 pages today</h3>
+        <p className="mt-2 text-sm leading-6 text-black/55 dark:text-white/55">
+          A small session is enough to keep your habit alive.
+        </p>
+      </div>
+    </div>
+  </section>
 );
 
 const OverviewPage = () => {
@@ -71,22 +269,31 @@ const OverviewPage = () => {
           api.get(ENDPOINTS.BOOKS.LIST),
           api.get(ENDPOINTS.BOOKS.STREAK),
         ]);
-        setContinueReading(crRes?.data || []);
-        setStats(statsRes?.data || null);
-        setRecentBooks(booksRes?.data || []);
-        setStreakData(streakRes?.data || null);
+
+        setContinueReading(unwrapPayload(crRes, []));
+        setStats(unwrapPayload(statsRes, null));
+        setRecentBooks(unwrapPayload(booksRes, []));
+        setStreakData(unwrapPayload(streakRes, null));
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchDashboardData();
   }, []);
 
-  const streak = streakData?.streak || 0;
-  const readDates = streakData?.readDates || [];
-  const last7Days = streakData?.last7Days?.length ? streakData.last7Days : buildLast7Days(readDates);
+  const currentBook = Array.isArray(continueReading) ? continueReading[0] : null;
+  const books = Array.isArray(recentBooks) ? recentBooks : [];
+  const streak = Number(streakData?.streak || streakData?.currentStreak || 0);
+  const readDates = Array.isArray(streakData?.readDates) ? streakData.readDates : [];
+  const last7Days = Array.isArray(streakData?.last7Days) && streakData.last7Days.length
+    ? streakData.last7Days
+    : readDates.length
+    ? buildLast7Days(readDates)
+    : [];
+  const hasStreakData = Boolean(streakData && (streak > 0 || readDates.length || last7Days.some((day) => day.read)));
 
   const scrollRecentlyAdded = (direction) => {
     recentScrollRef.current?.scrollBy({
@@ -96,266 +303,121 @@ const OverviewPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-black dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
-      <style>{`
-        @keyframes flamePulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.12); }
-        }
-        @keyframes streakCelebrate {
-          0% { transform: scale(1); }
-          30% { transform: scale(1.08); }
-          60% { transform: scale(0.96); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
-
+    <div className="min-h-screen bg-[#fcf9f2] text-black transition-colors duration-300 dark:bg-[#0f1419] dark:text-[#e4e2e1]">
       <Sidebar />
 
-      <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-0">
+      <main className="min-h-screen w-full min-w-0 overflow-x-hidden pb-28 transition-all duration-300 ease-in-out lg:ml-[256px] lg:pb-12">
         <DashboardNavbar />
 
-        <div className="max-w-[1200px] w-full mx-auto px-4 sm:px-10 py-6 sm:py-10 pb-32">
-
-          {/* Welcome Header */}
-          <div className="mb-10 sm:mb-14">
-            <p className="text-xs font-bold tracking-[0.2em] uppercase text-black/40 dark:text-white/40 mb-2 transition-colors duration-300">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
-            <h1 className="text-3xl sm:text-[2.75rem] font-serif font-bold text-black dark:text-white mb-2 transition-colors duration-300 leading-tight">
-              {getGreeting()},{' '}
-              <span className="text-[#c97b6b] dark:text-[#e8a898]">{displayName}</span>{' '}
-              <span className="inline-block origin-bottom-right rotate-12"></span>
-            </h1>
-            <p className="text-base text-black/50 dark:text-white/50 transition-colors duration-300">
-              Ready for your next chapter? Keep up the momentum.
-            </p>
-          </div>
-
-          {/* Continue Reading */}
-          <div className="flex justify-between items-end mb-6">
-            <h2 className="text-xl font-serif font-bold text-black dark:text-white transition-colors duration-300">Continue Reading</h2>
-            <Link to="/library" className="text-xs font-bold tracking-[0.15em] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1.5 uppercase">
-              Full Library <ArrowUpRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="bg-white dark:bg-[#161d27] rounded-[24px] mb-12 min-h-[200px] animate-pulse transition-colors duration-300" />
-          ) : continueReading.length > 0 ? (
-            <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent rounded-[24px] overflow-hidden flex flex-col md:flex-row shadow-lg mb-12 min-h-[320px] transition-colors duration-300">
-              {/* Cover */}
-              <div className="w-full md:w-[34%] h-[320px] md:h-auto relative overflow-hidden bg-gradient-to-br from-[#122e22] via-[#10251b] to-[#07120d]">
-                <div className="absolute inset-0 flex items-center justify-center p-6 md:p-8">
-                  <div className="h-[88%] aspect-[2/3] max-w-[76%] shadow-2xl rounded-xl bg-[#142e22] border border-white/10 flex items-center justify-center overflow-hidden">
-                    <BookCover
-                      src={continueReading[0].coverImage}
-                      title={continueReading[0].title}
-                      author={continueReading[0].author}
-                      priority
-                      rounded="rounded-xl"
-                      imageClassName="object-contain bg-[#10251b] opacity-95"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Info */}
-              <div className="w-full md:w-[62%] p-6 md:p-10 flex flex-col justify-between gap-6 md:gap-0">
-                <div>
-                  <span className="bg-[#fcf0ec] dark:bg-[#42221e] text-[#c97b6b] text-[10px] font-bold px-2.5 py-1 rounded tracking-wider uppercase inline-block mb-4">
-                    CURRENTLY READING
-                  </span>
-                  <h3 className="text-2xl md:text-4xl leading-tight font-serif text-[#0f1419] dark:text-[#f2e6d8] mb-1 transition-colors duration-300">
-                    {continueReading[0].title}
-                  </h3>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                  <div>
-                    <div className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-wider mb-2">Progress</div>
-                    <div className="flex items-baseline gap-3 mb-2">
-                      <span className="text-3xl font-serif text-black dark:text-white">{continueReading[0].percentageCompleted}%</span>
-                      <span className="text-xs text-black/50 dark:text-white/50">{continueReading[0].currentPage} / {continueReading[0].totalPages} Pages</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#c97b6b] rounded-full transition-all duration-500"
-                        style={{ width: `${continueReading[0].percentageCompleted}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <Link
-                    to={`/books/${continueReading[0].bookId}/read`}
-                    className="w-full bg-[#3b2a1a] dark:bg-[#d6d4d0] hover:opacity-80 text-white dark:text-black font-bold text-sm tracking-wider py-4 rounded-xl transition-all flex items-center justify-center gap-3"
-                  >
-                    <svg className="w-3 h-3 fill-current" viewBox="0 0 16 16"><path d="M4 2v12l10-6z" /></svg>
-                    CONTINUE READING
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <EmptyCard
-              message="You're not reading any books yet."
-              linkTo="/discover"
-              linkText="Find a book"
-            />
-          )}
-
-          {/* Stats & Streak Row */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
-            {/* Stats */}
-            <div className="md:col-span-4 flex flex-col gap-6">
-              <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent p-6 rounded-[24px] flex flex-col justify-center min-h-[140px] transition-colors duration-300">
-                <BookOpen className="w-5 h-5 text-black/40 dark:text-white/40 mb-3" />
-                <div className="text-4xl font-serif text-black dark:text-white mb-1">{loading ? '-' : stats?.CompletedBooks ?? 0}</div>
-                <div className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">Books Completed</div>
-              </div>
-              <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent p-6 rounded-[24px] flex flex-col justify-center min-h-[140px] transition-colors duration-300">
-                <FileText className="w-5 h-5 text-black/40 dark:text-white/40 mb-3" />
-                <div className="text-4xl font-serif text-black dark:text-white mb-1">{loading ? '-' : stats?.totalPagesRead ?? 0}</div>
-                <div className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">Pages Read</div>
-              </div>
-            </div>
-
-            {/* Streak Widget */}
-            <div className="md:col-span-8 bg-[#f5efdf] dark:bg-[#1f1e1d] border border-[#e8e4db] dark:border-transparent rounded-[24px] p-6 md:p-8 flex flex-col justify-between transition-colors duration-300">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <StreakFlame count={streak} />
-                    <div>
-                      <h3 className="text-4xl font-serif text-black dark:text-white leading-none">
-                        Day {streak}
-                      </h3>
-                      <p className="text-[10px] text-[#c97b6b] dark:text-[#e8a898] font-bold tracking-widest uppercase mt-1">
-                        {streak === 0 ? 'Start your streak today' : streak >= 30 ? 'Legendary Streak!' : streak >= 7 ? 'On fire!' : 'Reading Streak'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 7-Day Calendar */}
-              <div className="flex justify-between items-center mb-6 gap-1 sm:gap-2">
-                {(last7Days.length > 0 ? last7Days : Array.from({ length: 7 }, (_, i) => ({
-                  dayLabel: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i],
-                  read: false,
-                  isToday: i === 6,
-                }))).map((day, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 flex-1">
-                    <span className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">{day.dayLabel}</span>
-                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center transition-all duration-300 ${
-                      day.read
-                        ? 'bg-[#c97b6b] dark:bg-[#e8a898] shadow-md'
-                        : day.isToday
-                        ? 'border-2 border-[#c97b6b]/40 dark:border-[#e8a898]/30 bg-white/60 dark:bg-white/5'
-                        : 'bg-white dark:bg-white/5 border border-[#e8e4db] dark:border-transparent'
-                    }`}>
-                      {day.read ? (
-                        <Flame className="w-4 h-4 text-white drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" style={{ animation: "flamePulse 2s ease-in-out infinite" }} />
-                      ) : day.isToday ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#c97b6b]/60 dark:bg-[#e8a898]/60" />
-                      ) : (
-                        <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Streak Level Info */}
-              <div className="bg-white/60 dark:bg-[#0f1419]/50 border border-[#e8e4db] dark:border-transparent rounded-[16px] p-4 transition-colors duration-300">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                      streak >= 30 ? 'bg-amber-500/20 text-amber-500' :
-                      streak >= 7 ? 'bg-orange-500/20 text-orange-500' :
-                      'bg-black/10 dark:bg-white/10 text-black/40 dark:text-white/40'
-                    }`}>
-                      {streak >= 30 ? (
-                        <Trophy className="w-4 h-4" />
-                      ) : streak >= 7 ? (
-                        <Zap className="w-4 h-4" />
-                      ) : (
-                        <BookOpen className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-black dark:text-white">
-                        {streak >= 30 ? 'Legendary' : streak >= 7 ? 'On Fire' : 'Building Habit'}
-                      </p>
-                      <p className="text-[10px] text-black/40 dark:text-white/40 font-medium">
-                        {streak >= 30
-                          ? 'You are in the top tier of readers'
-                          : streak >= 7
-                          ? `${30 - streak} days to legendary status`
-                          : streak === 0
-                          ? 'Read today to start your streak'
-                          : `${7 - streak} more days to reach On Fire`}
-                      </p>
-                    </div>
-                  </div>
-                  <Link to="/stats" className="inline-flex items-center gap-1 text-[10px] font-bold text-[#c97b6b] tracking-widest uppercase hover:opacity-70 transition-opacity">
-                    Stats <ArrowUpRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recently Added */}
-          {!loading && (
-            <div className="mb-14">
-              <div className="flex justify-between items-end mb-6">
-                <h2 className="text-xl font-serif font-bold text-black dark:text-[#f2e6d8] transition-colors duration-300">Recently Added</h2>
-                <div className="flex gap-2">
-                  <button onClick={() => scrollRecentlyAdded(-1)} className="w-8 h-8 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-black/50 dark:text-white/50" aria-label="Scroll recently added left">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => scrollRecentlyAdded(1)} className="w-8 h-8 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-black/50 dark:text-white/50" aria-label="Scroll recently added right">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {recentBooks.length > 0 ? (
-                <div ref={recentScrollRef} className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-3 scroll-smooth">
-                  {recentBooks.map((book) => (
-                    <BookCard
-                      key={book._id}
-                      book={book}
-                      to={`/books/${book._id}`}
-                      variant="compact"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyCard
-                  message="No books in the library yet."
-                  linkTo="/discover"
-                  linkText="Discover books"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Discover CTA */}
-          <div className="bg-gradient-to-br from-[#3b2a1a] to-[#2a1d12] dark:from-[#1c2535] dark:to-[#141b28] rounded-[24px] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 transition-colors duration-300">
+        <div className="ml-0 mr-auto w-full max-w-[1240px] px-4 pb-8 pt-4 sm:px-10 sm:pt-6">
+          <section className="mb-8 flex flex-col justify-between gap-5 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7 md:flex-row md:items-end">
             <div>
-              <h2 className="text-2xl md:text-3xl font-serif text-white mb-2 text-center md:text-left">Ready to discover something new?</h2>
-              <p className="text-white/50 text-sm text-center md:text-left">Browse the entire library and add books to your collection.</p>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#e8e4db] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-black/45 dark:border-white/10 dark:bg-white/5 dark:text-white/45">
+                <CalendarDays className="h-3.5 w-3.5 text-[#c97b6b]" />
+                {getTodayLabel()}
+              </div>
+              <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white sm:text-4xl">
+                {getGreeting()}, <span className="text-[#c97b6b]">{displayName}</span>
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55 dark:text-white/55 sm:text-base">
+                Pick up where you left off and keep your reading streak alive.
+              </p>
             </div>
             <Link
               to="/discover"
-              className="w-full md:w-auto text-center px-8 py-4 rounded-xl bg-[#c97b6b] hover:bg-[#b8695c] text-white font-bold text-sm tracking-widest uppercase transition-all shrink-0 shadow-lg hover:shadow-[0_8px_30px_rgba(201,123,107,0.3)]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#e8e4db] bg-white px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-black transition hover:border-[#c97b6b]/40 hover:text-[#c97b6b] dark:border-white/10 dark:bg-white/5 dark:text-white"
             >
-              Browse Library
+              Discover books
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
+          </section>
+
+          <div className="mb-8 grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
+            <ContinueReadingHero book={currentBook} loading={loading} />
+            <div className="grid gap-6">
+              <StreakCard streak={streak} last7Days={last7Days} hasStreakData={hasStreakData} loading={loading} />
+              <GoalCard />
+            </div>
           </div>
 
+          <section className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+            <StatCard icon={FileText} label="Pages Read" value={stats?.totalPagesRead ?? 0} loading={loading} />
+            <StatCard icon={Trophy} label="Books Completed" value={stats?.CompletedBooks ?? 0} loading={loading} />
+            <StatCard icon={Flame} label="Current Streak" value={streak} loading={loading} accent />
+            <StatCard icon={BookOpen} label="Completion Rate" value={`${stats?.CompletionRate ?? 0}%`} loading={loading} />
+          </section>
+
+          <section className="mb-10">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#c97b6b]">Library</p>
+                <h2 className="mt-2 text-2xl font-semibold text-black dark:text-white">Recently Added</h2>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => scrollRecentlyAdded(-1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-black/50 transition hover:bg-black/5 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/10"
+                  aria-label="Scroll recently added left"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollRecentlyAdded(1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-black/50 transition hover:bg-black/5 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/10"
+                  aria-label="Scroll recently added right"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex gap-4 overflow-hidden pb-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <SkeletonCard key={index} className="h-[320px] w-[145px] shrink-0 sm:w-[180px] lg:w-[210px]" />
+                ))}
+              </div>
+            ) : books.length > 0 ? (
+              <div ref={recentScrollRef} className="scrollbar-hide flex gap-4 overflow-x-auto pb-3 scroll-smooth md:gap-6">
+                {books.map((book) => (
+                  <BookCard
+                    key={book._id}
+                    book={book}
+                    to={`/books/${book._id}`}
+                    variant="compact"
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={BookOpen}
+                title="No books added yet"
+                message="Your recently added books will appear here as soon as the library has content."
+                cta="Discover books"
+                to="/discover"
+              />
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-[#3b2a1a] to-[#2a1d12] p-7 shadow-[0_24px_80px_rgba(59,42,26,0.16)] dark:from-[#1c2535] dark:to-[#111827] sm:p-9">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#e8a898]">Next read</p>
+                <h2 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">Discover your next read</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-white/60">
+                  Explore curated books and continue building your reading habit.
+                </p>
+              </div>
+              <Link
+                to="/discover"
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#c97b6b] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]"
+              >
+                Browse Discover
+              </Link>
+            </div>
+          </section>
         </div>
       </main>
     </div>
@@ -363,7 +425,3 @@ const OverviewPage = () => {
 };
 
 export default OverviewPage;
-
-
-
-

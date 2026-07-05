@@ -7,7 +7,6 @@ gsap.registerPlugin(ScrollTrigger);
 const LandingAdvancedEffects = () => {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isMobile = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches;
 
     if (prefersReducedMotion) return;
     const cleanupFns = [];
@@ -81,15 +80,13 @@ const LandingAdvancedEffects = () => {
             "-=0.65"
           );
 
-          if (!isMobile) {
-            gsap.to(heroVisual, {
-              y: -12,
-              duration: 3.2,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-            });
-          }
+          gsap.to(heroVisual, {
+            y: -12,
+            duration: 3.2,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+          });
         }
       }
 
@@ -177,34 +174,32 @@ const LandingAdvancedEffects = () => {
         GENRE IMAGE PARALLAX
         Desktop only. It does not change horizontal scroll logic.
       */
-      if (!isMobile) {
-        const genreCards = gsap.utils.toArray("#genres article");
+      const genreCards = gsap.utils.toArray("#genres article");
 
-        genreCards.forEach((card) => {
-          const image = card.querySelector("img");
-          if (!image) return;
+      genreCards.forEach((card) => {
+        const image = card.querySelector("img");
+        if (!image) return;
 
-          gsap.fromTo(
-            image,
-            {
-              scale: 1.08,
-              yPercent: -4,
+        gsap.fromTo(
+          image,
+          {
+            scale: 1.08,
+            yPercent: -4,
+          },
+          {
+            scale: 1.14,
+            yPercent: 4,
+            ease: "none",
+            scrollTrigger: {
+              trigger: card,
+              start: "left right",
+              end: "right left",
+              scrub: true,
+              horizontal: true,
             },
-            {
-              scale: 1.14,
-              yPercent: 4,
-              ease: "none",
-              scrollTrigger: {
-                trigger: card,
-                start: "left right",
-                end: "right left",
-                scrub: true,
-                horizontal: true,
-              },
-            }
-          );
-        });
-      }
+          }
+        );
+      });
 
       /*
         STATS COUNT-UP
@@ -248,42 +243,40 @@ const LandingAdvancedEffects = () => {
         MAGNETIC CTA BUTTONS
         Desktop only. Subtle SaaS hover.
       */
-      if (!isMobile) {
-        const magneticButtons = gsap.utils.toArray("#cta a, #cta button, #hero a, #hero button");
+      const magneticButtons = gsap.utils.toArray("#cta a, #cta button, #hero a, #hero button");
 
-        magneticButtons.forEach((button) => {
-          const xTo = gsap.quickTo(button, "x", {
-            duration: 0.35,
-            ease: "power3.out",
-          });
-
-          const yTo = gsap.quickTo(button, "y", {
-            duration: 0.35,
-            ease: "power3.out",
-          });
-
-          const handleMove = (event) => {
-            const rect = button.getBoundingClientRect();
-            const x = event.clientX - rect.left - rect.width / 2;
-            const y = event.clientY - rect.top - rect.height / 2;
-
-            xTo(x * 0.16);
-            yTo(y * 0.22);
-          };
-
-          const handleLeave = () => {
-            xTo(0);
-            yTo(0);
-          };
-
-          button.addEventListener("mousemove", handleMove);
-          button.addEventListener("mouseleave", handleLeave);
-          cleanupFns.push(() => {
-            button.removeEventListener("mousemove", handleMove);
-            button.removeEventListener("mouseleave", handleLeave);
-          });
+      magneticButtons.forEach((button) => {
+        const xTo = gsap.quickTo(button, "x", {
+          duration: 0.35,
+          ease: "power3.out",
         });
-      }
+
+        const yTo = gsap.quickTo(button, "y", {
+          duration: 0.35,
+          ease: "power3.out",
+        });
+
+        const handleMove = (event) => {
+          const rect = button.getBoundingClientRect();
+          const x = event.clientX - rect.left - rect.width / 2;
+          const y = event.clientY - rect.top - rect.height / 2;
+
+          xTo(x * 0.16);
+          yTo(y * 0.22);
+        };
+
+        const handleLeave = () => {
+          xTo(0);
+          yTo(0);
+        };
+
+        button.addEventListener("mousemove", handleMove);
+        button.addEventListener("mouseleave", handleLeave);
+        cleanupFns.push(() => {
+          button.removeEventListener("mousemove", handleMove);
+          button.removeEventListener("mouseleave", handleLeave);
+        });
+      });
 
       ScrollTrigger.refresh();
     });

@@ -22,9 +22,8 @@ const ScrollTextSection = () => {
 
     if (!section) return;
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isMobile = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches;
 
-    if (prefersReducedMotion || isMobile) {
+    if (prefersReducedMotion) {
       const lineEls = section.querySelectorAll(".rn-about-line");
       gsap.set(lineEls, {
         opacity: 1,

@@ -53,9 +53,8 @@ const HorizontalScrollSection = () => {
 
     if (!section || !viewport || !track) return;
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isMobile = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches;
 
-    if (prefersReducedMotion || isMobile) {
+    if (prefersReducedMotion) {
       gsap.set(track, { clearProps: "transform" });
       if (progress) {
         gsap.set(progress, { scaleX: 1, transformOrigin: "left center" });

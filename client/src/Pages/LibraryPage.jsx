@@ -1,15 +1,86 @@
-﻿import ReaderCharacterMotion from "@/components/visuals/ReaderCharacterMotion";
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sidebar } from '../components/layout/Sidebar';
-import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, ChevronDown, BookOpen } from 'lucide-react';
+import {
+    BookOpen,
+    ChevronDown,
+    Layers3,
+    Library,
+    Percent,
+    RotateCcw,
+    Search as SearchIcon,
+    SlidersHorizontal,
+    Trophy,
+} from 'lucide-react';
+import { Sidebar } from '../components/layout/Sidebar';
+import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import api, { ENDPOINTS } from '@/lib/api';
 import BookCard from '@/components/books/BookCard';
 
 const getBookId = (book) => book?.bookId?._id || book?.bookId || book?._id || book?.id;
 const getProgress = (book) => Math.min(100, Math.max(0, Number(book?.percentageCompleted ?? book?.progress ?? 0) || 0));
+
+const getStatsValue = (stats, key, fallback = 0) => {
+    const value = stats?.[key];
+    return value === 0 ? 0 : value ?? fallback;
+};
+
+const SummaryCard = ({ icon: Icon, label, value, loading, accent = false }) => (
+    <div className={`flex min-h-[142px] flex-col justify-between rounded-[28px] border p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+        accent
+            ? 'border-[#c97b6b]/25 bg-[#fff4ef] shadow-[#c97b6b]/5 dark:bg-[#241714]'
+            : 'border-[#e8e4db] bg-white shadow-black/[0.03] dark:border-white/5 dark:bg-[#161d27]'
+    }`}>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+            accent
+                ? 'bg-[#c97b6b]/12 text-[#c97b6b]'
+                : 'bg-black/[0.04] text-black/45 dark:bg-white/[0.06] dark:text-white/50'
+        }`}>
+            <Icon className="h-5 w-5" />
+        </div>
+        <div>
+            <div className={`text-3xl font-semibold ${accent ? 'text-[#c97b6b]' : 'text-black dark:text-white'}`}>
+                {loading ? '-' : value}
+            </div>
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                {label}
+            </div>
+        </div>
+    </div>
+);
+
+const LoadingGrid = () => (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+            <div key={index} className="min-w-0">
+                <div className="aspect-[2/3] w-full animate-pulse rounded-2xl border border-[#e8e4db] bg-white/80 shadow-sm dark:border-white/5 dark:bg-[#161d27]" />
+                <div className="mt-4 h-4 w-3/4 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+                <div className="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+                <div className="mt-4 h-11 animate-pulse rounded-2xl bg-black/10 dark:bg-white/10" />
+            </div>
+        ))}
+    </div>
+);
+
+const EmptyState = ({ icon: Icon = BookOpen, title, text, action, onAction, to }) => (
+    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[32px] border border-dashed border-[#d7cfc4] bg-white/70 p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#161d27]/70">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#c97b6b]/10 text-[#c97b6b]">
+            <Icon className="h-6 w-6" />
+        </div>
+        <h2 className="text-2xl font-semibold text-black dark:text-white">{title}</h2>
+        <p className="mt-3 max-w-md text-sm leading-6 text-black/55 dark:text-white/55">{text}</p>
+        {to ? (
+            <Link to={to} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]">
+                {action}
+            </Link>
+        ) : (
+            <button type="button" onClick={onAction} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]">
+                <RotateCcw className="h-4 w-4" />
+                {action}
+            </button>
+        )}
+    </div>
+);
 
 const LibraryPage = () => {
     const [activeTab, setActiveTab] = useState('All');
@@ -37,6 +108,7 @@ const LibraryPage = () => {
                         id: getBookId(b),
                         title: b.title || sourceBook?.title || 'Unknown Title',
                         author: b.author || sourceBook?.author || 'Unknown Author',
+                        category: b.category || sourceBook?.category || sourceBook?.genre || '',
                         coverImage: b.coverImage || b.coverUrl || b.image || b.thumbnail || sourceBook?.coverImage,
                         coverUrl: b.coverUrl || sourceBook?.coverUrl,
                         image: b.image || sourceBook?.image,
@@ -74,7 +146,7 @@ const LibraryPage = () => {
             })
             .filter(book => {
                 if (!query) return true;
-                return `${book.title} ${book.author}`.toLowerCase().includes(query);
+                return `${book.title} ${book.author} ${book.category}`.toLowerCase().includes(query);
             })
             .sort((a, b) => {
                 if (sortBy === 'progress') return b.progress - a.progress;
@@ -89,118 +161,138 @@ const LibraryPage = () => {
         setSortBy('recent');
     };
 
+    const totalBooks = books.length;
+    const currentlyReading = books.filter(book => !book.isCompleted).length;
+    const completedBooks = books.filter(book => book.isCompleted).length;
+    const averageProgress = totalBooks
+        ? Math.round(books.reduce((sum, book) => sum + (Number(book.progress) || 0), 0) / totalBooks)
+        : 0;
+
+    const emptyFilterText = searchQuery.trim()
+        ? `No books match "${searchQuery.trim()}" in ${activeTab.toLowerCase()} books.`
+        : `No books found in the ${activeTab.toLowerCase()} filter.`;
+
     return (
-        <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
+        <div className="min-h-screen bg-[#fcf9f2] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#0f1419] dark:text-[#e4e2e1]">
             <Sidebar />
 
-            <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
+            <main className="min-h-screen w-full min-w-0 overflow-x-hidden pb-28 transition-all duration-300 ease-in-out lg:ml-[256px] lg:pb-16">
                 <DashboardNavbar />
 
-                <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-10 pt-10">
+                <div className="ml-0 mr-auto w-full max-w-[1240px] px-4 pb-8 pt-4 sm:px-10 sm:pt-6">
+                    <section className="mb-8 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7">
+                        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                            <div>
+                                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-[#c97b6b]">Reading workspace</p>
+                                <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white sm:text-4xl">
+                                    My Library
+                                </h1>
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55 dark:text-white/55 sm:text-base">
+                                    Your personal reading space. Continue books, track progress, and organize your reading journey.
+                                </p>
+                            </div>
 
-                    {/* Header Section */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4 md:gap-0">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-serif text-black dark:text-white mb-2 tracking-tight">My Library</h1>
-                            <p className="text-black/60 dark:text-white/60 italic font-serif text-base md:text-lg">Your personal reading collection</p>
+                            <div className="grid grid-cols-3 gap-2 rounded-3xl border border-[#e8e4db] bg-white p-2 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+                                <div className="px-3 py-2">
+                                    <p className="text-lg font-semibold text-black dark:text-white">{loading ? '-' : totalBooks}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Books</p>
+                                </div>
+                                <div className="px-3 py-2">
+                                    <p className="text-lg font-semibold text-black dark:text-white">{loading ? '-' : currentlyReading}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Reading</p>
+                                </div>
+                                <div className="px-3 py-2">
+                                    <p className="text-lg font-semibold text-black dark:text-white">{loading ? '-' : completedBooks}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Done</p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="px-5 py-2.5 bg-[#f0ece1] dark:bg-[#1c2535] rounded-full flex items-center gap-3 border border-black/5 dark:border-white/5 shadow-sm">
-                            <div className="w-2 h-2 bg-[#c97b6b] rounded-full shadow-[0_0_8px_rgba(232,165,80,0.8)]"></div>
-                            <span className="text-xs font-bold tracking-widest text-black dark:text-white uppercase">{books.length} BOOKS</span>
-                        </div>
-                    </div>
+                    </section>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
-                        <div className="bg-[#ffffff] dark:bg-[#161d27] p-4 md:p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-lg">
-                            <div className="text-[10px] font-bold tracking-widest uppercase text-black/50 dark:text-white/50 mb-3">CURRENTLY READING</div>
-                            <div className="font-serif text-4xl text-black dark:text-white">{stats ? stats.CurrentlyReading : 0}</div>
-                        </div>
-                        <div className="bg-[#ffffff] dark:bg-[#161d27] p-4 md:p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-lg">
-                            <div className="text-[10px] font-bold tracking-widest uppercase text-black/50 dark:text-white/50 mb-3">COMPLETED</div>
-                            <div className="font-serif text-4xl text-black dark:text-white">{stats ? stats.CompletedBooks : 0}</div>
-                        </div>
-                        <div className="bg-[#ffffff] dark:bg-[#161d27] p-4 md:p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-lg">
-                            <div className="text-[10px] font-bold tracking-widest uppercase text-black/50 dark:text-white/50 mb-3">PAGES READ</div>
-                            <div className="font-serif text-4xl text-black dark:text-white">{stats ? stats.totalPagesRead : 0}</div>
-                        </div>
-                        <div className="bg-[#ffffff] dark:bg-[#161d27] p-4 md:p-6 rounded-xl border border-black/5 dark:border-white/5 shadow-lg">
-                            <div className="text-[10px] font-bold tracking-widest uppercase text-black/50 dark:text-white/50 mb-3">COMPLETION RATE</div>
-                            <div className="font-serif text-4xl text-[#c97b6b]">{stats ? stats.CompletionRate : 0}%</div>
-                        </div>
-                    </div>
+                    <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+                        <SummaryCard icon={Library} label="Total Books" value={totalBooks} loading={loading} />
+                        <SummaryCard icon={BookOpen} label="Currently Reading" value={getStatsValue(stats, 'CurrentlyReading', currentlyReading)} loading={loading} />
+                        <SummaryCard icon={Trophy} label="Completed" value={getStatsValue(stats, 'CompletedBooks', completedBooks)} loading={loading} />
+                        <SummaryCard icon={Percent} label="Average Progress" value={`${averageProgress}%`} loading={loading} accent />
+                    </section>
 
-                    <div className="mb-8 rounded-2xl border border-black/5 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-[#161d27]">
+                    <section className="mb-8 rounded-[28px] border border-[#e8e4db] bg-white p-3 shadow-sm dark:border-white/5 dark:bg-[#161d27]">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-black/5 bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
+                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
                                 <SearchIcon className="h-5 w-5 shrink-0 text-black/40 dark:text-white/40" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(event) => setSearchQuery(event.target.value)}
-                                    placeholder="Search by title or author..."
+                                    placeholder="Search by title, author, or category..."
                                     className="w-full border-none bg-transparent p-0 text-sm text-black outline-none placeholder:text-black/30 focus:ring-0 dark:text-white dark:placeholder:text-white/30"
                                 />
                             </div>
 
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <div className="flex overflow-x-auto scrollbar-hide rounded-full border border-black/5 bg-[#fcf9f2] p-1.5 dark:border-white/5 dark:bg-[#0f1419]">
+                                <div className="flex rounded-full border border-[#e8e4db] bg-[#fcf9f2] p-1.5 dark:border-white/5 dark:bg-[#0f1419]">
                                     {['All', 'Reading', 'Completed'].map(tab => (
                                         <button
                                             key={tab}
+                                            type="button"
                                             onClick={() => setActiveTab(tab)}
-                                            className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab
-                                                ? 'bg-[#c97b6b] text-white shadow-sm'
-                                                : 'text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white'
-                                                }`}
+                                            className={`min-h-10 flex-1 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all sm:flex-none sm:px-5 ${
+                                                activeTab === tab
+                                                    ? 'bg-[#c97b6b] text-white shadow-sm'
+                                                    : 'text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white'
+                                            }`}
                                         >
                                             {tab}
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className="relative flex items-center gap-3 rounded-xl border border-black/5 bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
+                                <div className="relative flex min-h-12 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 dark:border-white/5 dark:bg-[#0f1419]">
+                                    <SlidersHorizontal className="h-4 w-4 text-black/35 dark:text-white/35" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Sort</span>
                                     <select
                                         value={sortBy}
                                         onChange={(event) => setSortBy(event.target.value)}
-                                        className="cursor-pointer appearance-none border-none bg-transparent py-0 pl-0 pr-7 text-sm font-medium text-black focus:ring-0 dark:text-white"
+                                        className="w-full cursor-pointer appearance-none border-none bg-transparent py-0 pl-0 pr-8 text-sm font-medium text-black focus:ring-0 dark:text-white sm:w-auto"
                                     >
                                         <option value="recent">Recently Read</option>
                                         <option value="progress">Progress</option>
-                                        <option value="title">Title</option>
+                                        <option value="title">Title A-Z</option>
                                     </select>
                                     <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 opacity-50" />
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    {!loading && books.length === 0 ? (
-                        <div className="mx-auto grid max-w-4xl grid-cols-1 items-center gap-8 rounded-[28px] border border-black/5 bg-white p-6 shadow-lg dark:border-white/5 dark:bg-[#161d27] md:grid-cols-[0.9fr_1.1fr]">
-                            <ReaderCharacterMotion size="medium" imageClassName="h-[260px]" showBadge={false} dark />
-                            <div className="text-center md:text-left">
-                                <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#c97b6b] md:mx-0" />
-                                <h2 className="font-serif text-3xl text-black dark:text-white">Your shelf is waiting.</h2>
-                                <p className="mt-3 text-sm leading-6 text-black/55 dark:text-white/55">Add your first book and ReadNest will start tracking progress, streaks, and reading rhythm automatically.</p>
-                                <Link to="/discover" className="mt-6 inline-flex rounded-xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-[#b8695c]">Discover Books</Link>
-                            </div>
-                        </div>
+                    {loading ? (
+                        <LoadingGrid />
+                    ) : books.length === 0 ? (
+                        <EmptyState
+                            icon={Library}
+                            title="Your library is empty"
+                            text="Explore books and add your first read to start tracking progress."
+                            action="Discover Books"
+                            to="/discover"
+                        />
                     ) : filteredBooks.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                            <SearchIcon className="w-14 h-14 mb-4" />
-                            <p className="text-xl font-serif">No books match your filters.</p>
-                            <button onClick={resetFilters} className="mt-4 px-6 py-2 bg-[#c97b6b] text-white rounded-lg">Reset filters</button>
-                        </div>
+                        <EmptyState
+                            icon={SearchIcon}
+                            title="No books found"
+                            text={emptyFilterText}
+                            action="Clear filters"
+                            onAction={resetFilters}
+                        />
                     ) : (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
-                            <AnimatePresence mode='popLayout'>
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                            <AnimatePresence mode="popLayout">
                                 {filteredBooks.map((book) => (
                                     <motion.div
                                         layout
-                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        initial={{ opacity: 0, scale: 0.97 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ duration: 0.3 }}
+                                        exit={{ opacity: 0, scale: 0.97 }}
+                                        transition={{ duration: 0.24 }}
                                         key={book.id}
                                         className="min-w-0"
                                     >
@@ -212,10 +304,14 @@ const LibraryPage = () => {
                                             progress={book.progress}
                                             className="w-full min-w-0"
                                         />
-                                        <Link to={`/books/${book.id}/read`} className={`mt-4 flex w-full items-center justify-center rounded py-3.5 text-center text-xs font-bold uppercase tracking-widest transition-all ${book.status === 'completed'
-                                                ? 'bg-transparent border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
-                                                : 'bg-[#3b2a1a] dark:bg-white text-white dark:text-black hover:opacity-90 shadow-lg'
-                                                }`}>
+                                        <Link
+                                            to={`/books/${book.id}/read`}
+                                            className={`mt-4 flex min-h-11 w-full items-center justify-center rounded-2xl px-3 py-3 text-center text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${
+                                                book.status === 'completed'
+                                                    ? 'border border-black/10 bg-white text-black hover:bg-black/5 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10'
+                                                    : 'bg-[#3b2a1a] text-white shadow-lg hover:opacity-90 dark:bg-white dark:text-black'
+                                            }`}
+                                        >
                                             {book.status === 'completed' ? 'Read Again' : 'Continue Reading'}
                                         </Link>
                                     </motion.div>
@@ -223,7 +319,6 @@ const LibraryPage = () => {
                             </AnimatePresence>
                         </div>
                     )}
-
                 </div>
             </main>
         </div>
@@ -231,5 +326,3 @@ const LibraryPage = () => {
 };
 
 export default LibraryPage;
-
-

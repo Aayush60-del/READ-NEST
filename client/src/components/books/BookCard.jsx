@@ -17,7 +17,7 @@ const variantStyles = {
     author: 'text-xs',
   },
   library: {
-    link: 'w-[150px] sm:w-[190px] lg:w-[220px] min-w-[150px] sm:min-w-[190px] lg:min-w-[220px]',
+    link: 'w-full min-w-0',
     cover: 'mb-3 rounded-xl shadow-lg',
     title: 'line-clamp-1 font-serif text-lg leading-tight',
     author: 'text-sm',

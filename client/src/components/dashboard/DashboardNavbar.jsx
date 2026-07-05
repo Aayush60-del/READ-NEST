@@ -50,7 +50,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
   return (
     <>
     <header className="sticky top-0 z-50 w-full bg-[#fcf9f2] dark:bg-[#0f1419] py-4 md:py-8 transition-colors duration-300">
-      <div className="max-w-[1200px] mx-auto px-4 md:px-10 flex items-center justify-between gap-4">
+      <div className="w-full max-w-[1240px] ml-0 mr-auto px-4 md:px-10 flex items-center justify-between gap-4">
 
         {/* Left Side: Logo (Optional) & Search */}
         <div className="flex items-center gap-4 md:gap-6 flex-1">

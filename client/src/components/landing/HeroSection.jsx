@@ -1,5 +1,4 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Library, Sparkles } from "lucide-react";
 import AnimateIcon from "@/components/animate-ui/AnimateIcon";
@@ -11,19 +10,7 @@ const formatMetric = (value, loading) => {
 
 const HeroSection = ({ stats, statsLoading = false }) => {
   const prefersReducedMotion = useReducedMotion();
-  const [isMobileMotion, setIsMobileMotion] = useState(() =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)").matches
-  );
-  const shouldReduceHeroMotion = prefersReducedMotion || isMobileMotion;
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 768px), (hover: none), (pointer: coarse)");
-    const update = () => setIsMobileMotion(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
+  const shouldReduceHeroMotion = prefersReducedMotion;
   const heroStats = [
     { value: stats?.activeReaders, label: "Readers" },
     { value: stats?.totalPagesRead, label: "Pages" },

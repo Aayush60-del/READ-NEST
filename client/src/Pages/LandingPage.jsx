@@ -45,11 +45,8 @@ const LandingPage = () => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    const canUseSmoothScroll = window.matchMedia(
-      "(min-width: 769px) and (pointer: fine) and (hover: hover)"
-    ).matches;
 
-    if (prefersReducedMotion || !canUseSmoothScroll) return undefined;
+    if (prefersReducedMotion) return undefined;
 
     const lenis = new Lenis({
       duration: 1.05,
