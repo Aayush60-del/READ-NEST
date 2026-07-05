@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const variantStyles = {
@@ -29,6 +29,13 @@ const getProgressValue = (book, progress) => {
   return Math.min(100, Math.max(0, Number(value) || 0));
 };
 
+const getPageLabel = (book) => {
+  const currentPage = book?.currentPage ?? book?.pagesRead;
+  const totalPages = book?.totalPages;
+  if (!currentPage || !totalPages) return null;
+  return `${currentPage}/${totalPages} pp.`;
+};
+
 const BookCard = ({
   book,
   to,
@@ -45,6 +52,8 @@ const BookCard = ({
   const coverSrc = book?.coverImage || book?.coverUrl || book?.image || book?.thumbnail;
   const showImage = Boolean(coverSrc) && !imageFailed;
   const progressValue = getProgressValue(book, progress);
+  const isCompleted = Boolean(book?.isCompleted) || book?.status === 'completed' || progressValue >= 100;
+  const pageLabel = getPageLabel(book);
 
   return (
     <Link
@@ -90,6 +99,20 @@ const BookCard = ({
           </div>
         )}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/35 to-transparent" />
+        {variant === 'library' && (
+          <div className="absolute right-3 top-3">
+            {isCompleted ? (
+              <div className="flex items-center gap-1.5 rounded-full border border-[#1b6b54] bg-[#0e3b2e] px-2.5 py-1 text-[#4ade80] shadow-lg">
+                <Check className="h-3 w-3" />
+                <span className="text-[9px] font-bold uppercase tracking-widest">Completed</span>
+              </div>
+            ) : (
+              <div className="rounded-full border border-white/10 bg-black/75 px-2.5 py-1 text-white shadow-lg backdrop-blur-md">
+                <span className="text-[9px] font-bold uppercase tracking-widest">{progressValue}%</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <h3
@@ -114,8 +137,8 @@ const BookCard = ({
       {showProgress && (
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-black/45 dark:text-white/45">
-            <span>Progress</span>
-            <span>{progressValue}%</span>
+            <span>{isCompleted ? 'Completed' : 'Progress'}</span>
+            <span>{isCompleted ? '100%' : pageLabel || `${progressValue}%`}</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
             <div

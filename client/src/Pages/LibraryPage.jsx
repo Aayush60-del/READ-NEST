@@ -1,12 +1,16 @@
 ﻿import ReaderCharacterMotion from "@/components/visuals/ReaderCharacterMotion";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, ChevronDown, Check, BookOpen } from 'lucide-react';
+import { Search as SearchIcon, ChevronDown, BookOpen } from 'lucide-react';
 import api, { ENDPOINTS } from '@/lib/api';
-import BookCover from '@/components/books/BookCover';
+import BookCard from '@/components/books/BookCard';
+
+const getBookId = (book) => book?.bookId?._id || book?.bookId || book?._id || book?.id;
+const getProgress = (book) => Math.min(100, Math.max(0, Number(book?.percentageCompleted ?? book?.progress ?? 0) || 0));
+
 const LibraryPage = () => {
     const [activeTab, setActiveTab] = useState('All');
     const [books, setBooks] = useState([]);
@@ -23,17 +27,30 @@ const LibraryPage = () => {
                     api.get(ENDPOINTS.BOOKS.STATS)
                 ]);
 
-                const formattedBooks = (booksRes?.data || []).map(b => ({
-                    id: b.bookId,
-                    title: b.title || 'Unknown Title',
-                    author: b.author || 'Unknown Author',
-                    coverImage: b.coverImage,
-                    progress: b.percentageCompleted || 0,
-                    pagesRead: b.currentPage || 0,
-                    totalPages: b.totalPages || 0,
-                    updatedAt: b.updatedAt || b.createdAt || '',
-                    status: b.isCompleted ? 'completed' : 'reading'
-                }));
+                const formattedBooks = (booksRes?.data || []).map(b => {
+                    const sourceBook = typeof b.bookId === 'object' ? b.bookId : b;
+                    const progress = getProgress(b);
+                    const isCompleted = Boolean(b.isCompleted) || progress >= 100;
+                    const currentPage = Number(b.currentPage ?? b.pagesRead ?? 0) || 0;
+
+                    return {
+                        id: getBookId(b),
+                        title: b.title || sourceBook?.title || 'Unknown Title',
+                        author: b.author || sourceBook?.author || 'Unknown Author',
+                        coverImage: b.coverImage || b.coverUrl || b.image || b.thumbnail || sourceBook?.coverImage,
+                        coverUrl: b.coverUrl || sourceBook?.coverUrl,
+                        image: b.image || sourceBook?.image,
+                        thumbnail: b.thumbnail || sourceBook?.thumbnail,
+                        progress,
+                        currentPage,
+                        pagesRead: currentPage,
+                        totalPages: Number(b.totalPages ?? sourceBook?.totalPages ?? 0) || 0,
+                        lastReadAt: b.lastReadAt || b.updatedAt || sourceBook?.updatedAt || b.createdAt || '',
+                        updatedAt: b.updatedAt || sourceBook?.updatedAt || b.createdAt || '',
+                        isCompleted,
+                        status: isCompleted ? 'completed' : 'reading'
+                    };
+                });
 
                 setBooks(formattedBooks);
                 setStats(statsRes?.data || null);
@@ -46,22 +63,31 @@ const LibraryPage = () => {
         fetchLibraryData();
     }, []);
 
-    const filteredBooks = books
-        .filter(book => {
-            if (activeTab === 'Reading') return book.status === 'reading';
-            if (activeTab === 'Completed') return book.status === 'completed';
-            return true;
-        })
-        .filter(book => {
-            const query = searchQuery.trim().toLowerCase();
-            if (!query) return true;
-            return `${book.title} ${book.author}`.toLowerCase().includes(query);
-        })
-        .sort((a, b) => {
-            if (sortBy === 'progress') return b.progress - a.progress;
-            if (sortBy === 'title') return a.title.localeCompare(b.title);
-            return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
-        });
+    const filteredBooks = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+
+        return books
+            .filter(book => {
+                if (activeTab === 'Reading') return !book.isCompleted;
+                if (activeTab === 'Completed') return book.isCompleted;
+                return true;
+            })
+            .filter(book => {
+                if (!query) return true;
+                return `${book.title} ${book.author}`.toLowerCase().includes(query);
+            })
+            .sort((a, b) => {
+                if (sortBy === 'progress') return b.progress - a.progress;
+                if (sortBy === 'title') return a.title.localeCompare(b.title);
+                return new Date(b.lastReadAt || b.updatedAt || 0) - new Date(a.lastReadAt || a.updatedAt || 0);
+            });
+    }, [books, activeTab, searchQuery, sortBy]);
+
+    const resetFilters = () => {
+        setSearchQuery('');
+        setActiveTab('All');
+        setSortBy('recent');
+    };
 
     return (
         <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
@@ -103,48 +129,48 @@ const LibraryPage = () => {
                         </div>
                     </div>
 
-                    <div className="flex mb-12 overflow-x-auto scrollbar-hide pb-2">
-                        <div className="bg-[#ffffff] dark:bg-[#161d27] p-1.5 rounded-full inline-flex border border-black/5 dark:border-white/5 min-w-max">
-                            {['All', 'Reading', 'Completed'].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${activeTab === tab
-                                        ? 'bg-[#c97b6b] text-white shadow-sm'
-                                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                                        }`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <div className="mb-8 rounded-2xl border border-black/5 bg-white p-3 shadow-sm dark:border-white/5 dark:bg-[#161d27]">
+                        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-black/5 bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
+                                <SearchIcon className="h-5 w-5 shrink-0 text-black/40 dark:text-white/40" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    placeholder="Search by title or author..."
+                                    className="w-full border-none bg-transparent p-0 text-sm text-black outline-none placeholder:text-black/30 focus:ring-0 dark:text-white dark:placeholder:text-white/30"
+                                />
+                            </div>
 
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-6 border-b border-black/5 dark:border-white/5 gap-4 md:gap-0">
-                        <div className="flex items-center gap-3 w-full md:w-1/3">
-                            <SearchIcon className="w-5 h-5 text-black/40 dark:text-white/40" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                placeholder="Search your library..."
-                                className="bg-transparent border-none outline-none text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 text-sm w-full font-serif italic"
-                            />
-                        </div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <div className="flex overflow-x-auto scrollbar-hide rounded-full border border-black/5 bg-[#fcf9f2] p-1.5 dark:border-white/5 dark:bg-[#0f1419]">
+                                    {['All', 'Reading', 'Completed'].map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab
+                                                ? 'bg-[#c97b6b] text-white shadow-sm'
+                                                : 'text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white'
+                                                }`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 w-full md:w-auto">
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-bold tracking-widest uppercase text-black/40 dark:text-white/40">SORT BY:</span>
-                                <select
-                                    value={sortBy}
-                                    onChange={(event) => setSortBy(event.target.value)}
-                                    className="bg-transparent border-none p-0 text-sm text-black dark:text-white font-medium focus:ring-0 cursor-pointer"
-                                >
-                                    <option value="recent">Recently Read</option>
-                                    <option value="progress">Progress</option>
-                                    <option value="title">Title</option>
-                                </select>
-                                <ChevronDown className="w-4 h-4 opacity-50 -ml-6 pointer-events-none" />
+                                <div className="relative flex items-center gap-3 rounded-xl border border-black/5 bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Sort</span>
+                                    <select
+                                        value={sortBy}
+                                        onChange={(event) => setSortBy(event.target.value)}
+                                        className="cursor-pointer appearance-none border-none bg-transparent py-0 pl-0 pr-7 text-sm font-medium text-black focus:ring-0 dark:text-white"
+                                    >
+                                        <option value="recent">Recently Read</option>
+                                        <option value="progress">Progress</option>
+                                        <option value="title">Title</option>
+                                    </select>
+                                    <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 opacity-50" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -163,10 +189,10 @@ const LibraryPage = () => {
                         <div className="flex flex-col items-center justify-center py-20 opacity-60">
                             <SearchIcon className="w-14 h-14 mb-4" />
                             <p className="text-xl font-serif">No books match your filters.</p>
-                            <button onClick={() => { setSearchQuery(''); setActiveTab('All'); }} className="mt-4 px-6 py-2 bg-[#c97b6b] text-white rounded-lg">Clear filters</button>
+                            <button onClick={resetFilters} className="mt-4 px-6 py-2 bg-[#c97b6b] text-white rounded-lg">Reset filters</button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
                             <AnimatePresence mode='popLayout'>
                                 {filteredBooks.map((book) => (
                                     <motion.div
@@ -176,63 +202,22 @@ const LibraryPage = () => {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ duration: 0.3 }}
                                         key={book.id}
-                                        className="group"
+                                        className="min-w-0"
                                     >
-                                        <Link to={`/books/${book.id}`} className="block">
-                                            <div className={`w-full aspect-[2/3] bg-[#d3bca8] rounded-xl shadow-2xl relative overflow-hidden mb-5 transition-transform duration-500 group-hover:-translate-y-2 flex items-center justify-center`}>
-
-                                                <BookCover
-                                                    src={book.coverImage}
-                                                    title={book.title}
-                                                    author={book.author}
-                                                    rounded="rounded-xl"
-                                                    className="transition-transform duration-500 group-hover:scale-105"
-                                                />
-
-                                                <div className="absolute top-4 right-4">
-                                                    {book.status === 'completed' ? (
-                                                        <div className="bg-[#0e3b2e] border border-[#1b6b54] text-[#4ade80] px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md">
-                                                            <Check className="w-3 h-3" />
-                                                            <span className="text-[10px] font-bold tracking-widest uppercase">Completed</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="bg-black/80 backdrop-blur-md border border-black/10 dark:border-white/10 text-white px-3 py-1.5 rounded-full shadow-lg">
-                                                            <span className="text-[10px] font-bold tracking-widest uppercase">{book.progress}%</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Spine shading */}
-                                                <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/50 to-transparent"></div>
-                                            </div>
-                                        </Link>
-
-                                        <div>
-                                            <h3 className="font-serif text-xl tracking-wide text-black dark:text-white mb-1 group-hover:text-[#c97b6b] transition-colors line-clamp-1">{book.title}</h3>
-                                            <p className="font-sans text-sm text-black/50 dark:text-white/50 mb-5">{book.author}</p>
-
-                                            <div className="mb-4">
-                                                <div className="flex justify-between items-end mb-2">
-                                                    <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">{book.status === 'completed' ? `Completed` : 'Progress'}</span>
-                                                    <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">{book.status === 'completed' ? '100%' : `${book.pagesRead}/${book.totalPages} pp.`}</span>
-                                                </div>
-                                                <div className="h-1 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-                                                    <motion.div
-                                                        initial={{ width: 0 }}
-                                                        animate={{ width: `${book.progress}%` }}
-                                                        transition={{ duration: 1, delay: 0.2 }}
-                                                        className={`h-full ${book.status === 'completed' ? 'bg-[#4ade80]' : 'bg-[#c97b6b]'} rounded-full shadow-[0_0_10px_rgba(232,165,80,0.5)]`}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <Link to={`/books/${book.id}/read`} className={`block w-full py-3.5 text-center text-xs font-bold tracking-widest uppercase rounded flex items-center justify-center transition-all ${book.status === 'completed'
+                                        <BookCard
+                                            book={book}
+                                            to={`/books/${book.id}`}
+                                            variant="library"
+                                            showProgress
+                                            progress={book.progress}
+                                            className="w-full min-w-0"
+                                        />
+                                        <Link to={`/books/${book.id}/read`} className={`mt-4 flex w-full items-center justify-center rounded py-3.5 text-center text-xs font-bold uppercase tracking-widest transition-all ${book.status === 'completed'
                                                 ? 'bg-transparent border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
                                                 : 'bg-[#3b2a1a] dark:bg-white text-white dark:text-black hover:opacity-90 shadow-lg'
                                                 }`}>
-                                                {book.status === 'completed' ? 'Read Again' : 'Continue Reading'}
-                                            </Link>
-                                        </div>
+                                            {book.status === 'completed' ? 'Read Again' : 'Continue Reading'}
+                                        </Link>
                                     </motion.div>
                                 ))}
                             </AnimatePresence>
