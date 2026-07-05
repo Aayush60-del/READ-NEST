@@ -4,7 +4,9 @@ import confetti from "canvas-confetti";
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
-function BookFlameIcon({ milestone = false }) {
+function BookFlameIcon({ milestone = false, type = "streak" }) {
+  const isBookFinished = type === "book_finished";
+
   return (
     <motion.div
       className="relative mx-auto flex h-28 w-28 items-center justify-center sm:h-32 sm:w-32"
@@ -19,7 +21,9 @@ function BookFlameIcon({ milestone = false }) {
       <motion.div
         className={cn(
           "absolute inset-0 rounded-full blur-2xl",
-          milestone
+          isBookFinished
+            ? "bg-emerald-400/40"
+            : milestone
             ? "bg-amber-400/50"
             : "bg-orange-500/35"
         )}
@@ -41,7 +45,9 @@ function BookFlameIcon({ milestone = false }) {
           d="M47 108C47 82 62 68 70 48C74 63 88 70 91 88C98 78 100 66 98 55C113 69 122 87 122 108C122 132 105 148 84 148C62 148 47 132 47 108Z"
           initial={{ fill: "#6b7280" }}
           animate={{
-            fill: ["#6b7280", "#f97316", "#fb923c", "#facc15"],
+            fill: isBookFinished
+              ? ["#6b7280", "#10b981", "#34d399", "#a7f3d0"]
+              : ["#6b7280", "#f97316", "#fb923c", "#facc15"],
           }}
           transition={{ duration: 0.55, ease: "easeOut" }}
         />
@@ -49,14 +55,16 @@ function BookFlameIcon({ milestone = false }) {
           d="M68 118C68 103 76 95 80 82C84 94 96 99 96 118C96 132 88 140 80 140C72 140 68 132 68 118Z"
           initial={{ fill: "#9ca3af" }}
           animate={{
-            fill: ["#9ca3af", "#fed7aa", "#fff7ed"],
+            fill: isBookFinished
+              ? ["#9ca3af", "#d1fae5", "#ecfdf5"]
+              : ["#9ca3af", "#fed7aa", "#fff7ed"],
           }}
           transition={{ duration: 0.5, delay: 0.12, ease: "easeOut" }}
         />
         <motion.path
           d="M42 102C55 95 68 96 80 104C92 96 105 95 118 102V128C105 121 92 122 80 130C68 122 55 121 42 128V102Z"
           fill="#1f2937"
-          stroke="#f59e0b"
+          stroke={isBookFinished ? "#34d399" : "#f59e0b"}
           strokeWidth="5"
           strokeLinejoin="round"
           initial={{ pathLength: 0, opacity: 0 }}
@@ -65,7 +73,7 @@ function BookFlameIcon({ milestone = false }) {
         />
         <motion.path
           d="M80 104V130"
-          stroke="#fbbf24"
+          stroke={isBookFinished ? "#a7f3d0" : "#fbbf24"}
           strokeWidth="4"
           strokeLinecap="round"
           initial={{ pathLength: 0 }}
@@ -165,6 +173,24 @@ function RollingNumber({ value }) {
   );
 }
 
+function BookFinishedBadge() {
+  return (
+    <motion.div
+      className="mx-auto mt-3 flex h-[84px] items-center justify-center"
+      initial={{ y: 28, opacity: 0, scale: 0.82 }}
+      animate={{ y: 0, opacity: 1, scale: 1 }}
+      transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="rounded-3xl border border-emerald-300/25 bg-emerald-300/10 px-6 py-4">
+        <div className="text-4xl font-black text-emerald-200">100%</div>
+        <div className="mt-1 text-xs font-bold uppercase tracking-[0.24em] text-emerald-300/80">
+          complete
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function WeeklyTracker({ weeklyProgress = [] }) {
   const days = ["M", "T", "W", "T", "F", "S", "S"];
   const progress =
@@ -219,7 +245,7 @@ function WeeklyTracker({ weeklyProgress = [] }) {
                     delay: 0.55 + index * 0.055,
                   }}
                 >
-                  ✓
+                  OK
                 </motion.span>
               ) : (
                 day
@@ -233,11 +259,62 @@ function WeeklyTracker({ weeklyProgress = [] }) {
   );
 }
 
-function getMessage(streak, milestone) {
-  if (milestone) return "Milestone unlocked! Your reading habit is becoming powerful.";
-  if (streak >= 30) return "A serious reading habit is forming.";
-  if (streak >= 7) return "One full week of consistency.";
-  return "Small pages. Big progress.";
+function getAchievementCopy({ type, streak, milestone, title, message, ctaLabel }) {
+  if (title || message || ctaLabel) {
+    return {
+      eyebrow:
+        type === "book_finished"
+          ? "Book Completed"
+          : type === "pages_read"
+          ? "Reading Goal"
+          : "Daily Reading Streak",
+      title: title || "Milestone unlocked!",
+      message: message || "Your reading habit is becoming powerful.",
+      ctaLabel: ctaLabel || "Continue Reading",
+      footer:
+        type === "book_finished"
+          ? "Choose another book when you are ready."
+          : "Read again tomorrow to protect your streak.",
+    };
+  }
+
+  if (type === "book_finished") {
+    return {
+      eyebrow: "Book Completed",
+      title: "Book finished!",
+      message: "You turned the final page. Beautiful work.",
+      ctaLabel: "Nice",
+      footer: "Choose another book when you are ready.",
+    };
+  }
+
+  if (type === "pages_read") {
+    return {
+      eyebrow: "Reading Goal",
+      title: "5 pages done!",
+      message: "Today's reading day is counted. Tiny session, real momentum.",
+      ctaLabel: "Keep Reading",
+      footer: "Read again tomorrow to protect your streak.",
+    };
+  }
+
+  if (milestone) {
+    return {
+      eyebrow: "Daily Reading Streak",
+      title: `${streak} day streak!`,
+      message: "Milestone unlocked! Your reading habit is becoming powerful.",
+      ctaLabel: "Continue Reading",
+      footer: "Read again tomorrow to protect your streak.",
+    };
+  }
+
+  return {
+    eyebrow: "Daily Reading Streak",
+    title: "You kept it alive!",
+    message: streak >= 7 ? "One full week of consistency." : "Small pages. Big progress.",
+    ctaLabel: "Continue Reading",
+    footer: "Read again tomorrow to protect your streak.",
+  };
 }
 
 export default function StreakCelebration({
@@ -247,29 +324,44 @@ export default function StreakCelebration({
   newStreak = 1,
   weeklyProgress = [],
   milestone = false,
+  type = "streak",
+  title = "",
+  message = "",
+  ctaLabel = "",
 }) {
   const reducedMotion = useReducedMotion();
-  const message = getMessage(newStreak, milestone);
+  const copy = getAchievementCopy({
+    type,
+    streak: newStreak,
+    milestone,
+    title,
+    message,
+    ctaLabel,
+  });
+  const isBigMoment = milestone || type === "book_finished" || type === "pages_read";
 
   useEffect(() => {
-    if (!open || !milestone || reducedMotion) return;
+    if (!open || !isBigMoment || reducedMotion) return;
 
     const timer = window.setTimeout(() => {
       confetti({
-        particleCount: 42,
-        spread: 58,
+        particleCount: type === "book_finished" ? 64 : 42,
+        spread: type === "book_finished" ? 76 : 58,
         startVelocity: 32,
         ticks: 120,
         gravity: 0.9,
         scalar: 0.82,
         origin: { x: 0.5, y: 0.42 },
-        colors: ["#facc15", "#fb923c", "#f97316", "#fff7ed"],
+        colors:
+          type === "book_finished"
+            ? ["#34d399", "#a7f3d0", "#fb923c", "#fff7ed"]
+            : ["#facc15", "#fb923c", "#f97316", "#fff7ed"],
         disableForReducedMotion: true,
       });
     }, 260);
 
     return () => window.clearTimeout(timer);
-  }, [open, milestone, reducedMotion]);
+  }, [open, isBigMoment, reducedMotion, type]);
 
   useEffect(() => {
     if (!open) return;
@@ -297,7 +389,7 @@ export default function StreakCelebration({
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950/80 px-4 py-6 backdrop-blur-xl"
           role="dialog"
           aria-modal="true"
-          aria-label="Reading streak celebration"
+          aria-label="Reading achievement celebration"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -324,19 +416,22 @@ export default function StreakCelebration({
           >
             <div className="absolute -left-24 -top-24 h-52 w-52 rounded-full bg-orange-500/20 blur-3xl" />
             <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-yellow-400/10 blur-3xl" />
-            {milestone ? (
+            {isBigMoment ? (
               <motion.div
-                className="absolute inset-x-8 top-4 h-24 rounded-full bg-amber-300/20 blur-3xl"
+                className={cn(
+                  "absolute inset-x-8 top-4 h-24 rounded-full blur-3xl",
+                  type === "book_finished" ? "bg-emerald-300/20" : "bg-amber-300/20"
+                )}
                 initial={{ opacity: 0, scale: 0.4 }}
                 animate={{ opacity: [0, 1, 0.45], scale: [0.4, 1.25, 1] }}
                 transition={{ duration: 0.8 }}
               />
             ) : null}
 
-            <SparkParticles reduced={reducedMotion} milestone={milestone} />
+            <SparkParticles reduced={reducedMotion} milestone={isBigMoment} />
 
             <div className="relative z-10">
-              <BookFlameIcon milestone={milestone} />
+              <BookFlameIcon milestone={milestone} type={type} />
 
               <motion.p
                 className="mt-2 text-xs font-bold uppercase tracking-[0.28em] text-amber-300/90"
@@ -344,23 +439,27 @@ export default function StreakCelebration({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reducedMotion ? 0 : 0.38, duration: 0.25 }}
               >
-                Daily Reading Streak
+                {copy.eyebrow}
               </motion.p>
 
-              <motion.div
-                className="mt-3 flex items-end justify-center gap-2"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reducedMotion ? 0 : 0.22, duration: 0.35 }}
-              >
-                <RollingNumber value={newStreak} />
-                <span className="mb-2 text-xl font-extrabold text-zinc-200 sm:text-2xl">
-                  days
-                </span>
-              </motion.div>
+              {type === "book_finished" ? (
+                <BookFinishedBadge />
+              ) : (
+                <motion.div
+                  className="mt-3 flex items-end justify-center gap-2"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: reducedMotion ? 0 : 0.22, duration: 0.35 }}
+                >
+                  <RollingNumber value={type === "pages_read" ? 5 : newStreak} />
+                  <span className="mb-2 text-xl font-extrabold text-zinc-200 sm:text-2xl">
+                    {type === "pages_read" ? "pages" : "days"}
+                  </span>
+                </motion.div>
+              )}
 
               <p className="sr-only" aria-live="polite">
-                Your reading streak increased from {previousStreak} to {newStreak} days.
+                {copy.title} {copy.message}
               </p>
 
               <motion.h2
@@ -369,7 +468,7 @@ export default function StreakCelebration({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reducedMotion ? 0 : 0.48, duration: 0.28 }}
               >
-                {milestone ? "Milestone unlocked!" : "You kept it alive!"}
+                {copy.title}
               </motion.h2>
 
               <motion.p
@@ -378,10 +477,10 @@ export default function StreakCelebration({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reducedMotion ? 0 : 0.58, duration: 0.28 }}
               >
-                {message}
+                {copy.message}
               </motion.p>
 
-              <WeeklyTracker weeklyProgress={weeklyProgress} />
+              {type === "book_finished" ? null : <WeeklyTracker weeklyProgress={weeklyProgress} />}
 
               <motion.div
                 className="mt-7 rounded-3xl border border-amber-300/15 bg-gradient-to-br from-amber-300/10 to-orange-500/10 p-4"
@@ -389,9 +488,7 @@ export default function StreakCelebration({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: reducedMotion ? 0 : 0.82, duration: 0.32 }}
               >
-                <p className="text-sm font-semibold text-amber-100">
-                  Read again tomorrow to protect your streak.
-                </p>
+                <p className="text-sm font-semibold text-amber-100">{copy.footer}</p>
               </motion.div>
 
               <motion.button
@@ -402,7 +499,7 @@ export default function StreakCelebration({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reducedMotion ? 0 : 0.98, duration: 0.28 }}
               >
-                Continue Reading
+                {copy.ctaLabel}
               </motion.button>
             </div>
           </motion.div>

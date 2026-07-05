@@ -15,7 +15,7 @@ const MobileBottomNav = () => {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#e8e4db] bg-white/90 px-2 pt-2 shadow-[0_-8px_30px_rgba(15,20,25,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111827]/90 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#e8e4db] bg-[#fffaf3]/92 px-2 pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/92 dark:shadow-[0_-8px_30px_rgba(0,0,0,0.24)] lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Mobile navigation"
     >
@@ -32,8 +32,8 @@ const MobileBottomNav = () => {
               className={cn(
                 'flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold transition-colors',
                 active
-                  ? 'text-[#c97b6b]'
-                  : 'text-black/45 hover:text-black dark:text-white/45 dark:hover:text-white'
+                  ? 'text-[#c96f5c] dark:text-[#ff9c7a]'
+                  : 'text-slate-500 hover:text-[#111827] dark:hover:text-white'
               )}
               aria-current={active ? 'page' : undefined}
             >

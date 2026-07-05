@@ -14,15 +14,15 @@ const Section = ({ id, title, description, icon: Icon, accentColor = '#c97b6b', 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4 }}
-    className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-white/5 rounded-[28px] overflow-hidden shadow-sm scroll-mt-28"
+    className="overflow-hidden rounded-[28px] border border-[#e8e4db] bg-white/75 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl scroll-mt-28 dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]"
   >
-    <div className="px-5 sm:px-6 py-5 border-b border-[#e8e4db] dark:border-white/5 flex items-center gap-4">
+    <div className="px-5 sm:px-6 py-5 border-b border-white/[0.08] flex items-center gap-4">
       <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${accentColor}18` }}>
         <Icon className="w-5 h-5" style={{ color: accentColor }} />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-black dark:text-white">{title}</h2>
-        {description && <p className="text-sm text-black/45 dark:text-white/45 mt-1">{description}</p>}
+        <h2 className="text-lg font-semibold text-[#111827] dark:text-white">{title}</h2>
+        {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
       </div>
     </div>
     <div className="p-5 sm:p-6">{children}</div>
@@ -32,7 +32,7 @@ const Section = ({ id, title, description, icon: Icon, accentColor = '#c97b6b', 
 // ---- Field ----
 const Field = ({ label, id, type = 'text', value, onChange, placeholder, disabled, rightElement }) => (
   <div className="space-y-2">
-    <label htmlFor={id} className="block text-[10px] font-bold tracking-widest uppercase text-black/40 dark:text-white/40">{label}</label>
+    <label htmlFor={id} className="block text-[10px] font-bold tracking-widest uppercase text-slate-500">{label}</label>
     <div className="relative">
       <input
         id={id}
@@ -41,7 +41,7 @@ const Field = ({ label, id, type = 'text', value, onChange, placeholder, disable
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full h-12 bg-[#fcf9f2] dark:bg-[#0f1419] border border-[#e8e4db] dark:border-[#243040] rounded-2xl px-4 text-sm text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/20 focus:outline-none focus:border-[#c97b6b] dark:focus:border-[#c97b6b] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full h-12 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 text-sm text-[#111827] placeholder:text-slate-400 transition-colors focus:outline-none focus:border-[#c97b6b] disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.08] dark:bg-[#070b12] dark:text-white dark:placeholder:text-slate-600 dark:focus:border-[#ff7a4f]"
       />
       {rightElement && <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightElement}</div>}
     </div>
@@ -69,16 +69,16 @@ const StatusMessage = ({ status }) => {
 };
 
 const Toggle = ({ label, description, checked, onChange }) => (
-  <div className="flex items-center justify-between gap-4 p-4 bg-[#fcf9f2] dark:bg-[#0f1419] rounded-2xl border border-[#e8e4db] dark:border-[#243040]/50">
+  <div className="flex items-center justify-between gap-4 p-4 bg-[#fcf9f2] rounded-2xl border border-[#e8e4db] dark:bg-[#070b12] dark:border-white/[0.08]">
     <div>
-      <p className="text-sm font-semibold text-black dark:text-white">{label}</p>
-      {description && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{description}</p>}
+      <p className="text-sm font-semibold text-[#111827] dark:text-white">{label}</p>
+      {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
     </div>
     <button
       type="button"
       onClick={() => onChange(!checked)}
       className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c97b6b] ${
-        checked ? 'bg-[#c97b6b]' : 'bg-black/10 dark:bg-white/10'
+        checked ? 'bg-[#ff7a4f]' : 'bg-white/10'
       }`}
     >
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -270,36 +270,37 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
+    <div className="min-h-screen bg-[#fcf9f2] text-[#111827] font-sans flex transition-colors duration-300 dark:bg-[#070b12] dark:text-white">
       <Sidebar />
 
       <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
         <DashboardNavbar />
 
-        <div className="ml-0 mr-auto max-w-[1240px] w-full px-4 sm:px-10 pt-6 pb-20">
+        <div className="relative ml-0 mr-auto max-w-[1240px] w-full px-4 sm:px-10 pt-6 pb-20">
+          <div className="pointer-events-none absolute left-10 top-0 h-72 w-72 rounded-full bg-[#c97b6b]/10 blur-3xl" />
 
           {/* Page Header */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7"
+            className="relative z-10 mb-8 rounded-[32px] border border-[#e8e4db] bg-white/75 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-7"
           >
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-[#c97b6b]">Account center</p>
-                <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white sm:text-4xl">Settings</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55 dark:text-white/55 sm:text-base">
+                <h1 className="text-3xl font-semibold tracking-tight text-[#111827] dark:text-white sm:text-4xl">Settings</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
                   Manage your account, reading preferences, and app experience.
                 </p>
               </div>
 
-              <div className="flex items-center gap-4 rounded-3xl border border-[#e8e4db] bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center gap-4 rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4 shadow-sm">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#c97b6b] to-[#a65d50] shadow-lg">
                   <span className="text-xl font-bold text-white">{initial}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-black dark:text-white">{user?.name || 'Reader'}</p>
-                  <p className="max-w-[220px] truncate text-xs text-black/45 dark:text-white/45">{user?.email || 'No email available'}</p>
+                  <p className="text-sm font-bold text-[#111827] dark:text-white">{user?.name || 'Reader'}</p>
+                  <p className="max-w-[220px] truncate text-xs text-slate-500">{user?.email || 'No email available'}</p>
                 </div>
               </div>
             </div>
@@ -307,14 +308,14 @@ const SettingsPage = () => {
 
           <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
             <aside className="xl:sticky xl:top-28 xl:self-start">
-              <div className="scrollbar-hide flex gap-2 overflow-x-auto rounded-[28px] border border-[#e8e4db] bg-white p-2 shadow-sm dark:border-white/5 dark:bg-[#161d27] xl:block xl:space-y-1">
+              <div className="scrollbar-hide flex gap-2 overflow-x-auto rounded-[28px] border border-[#e8e4db] bg-white/75 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)] xl:block xl:space-y-1">
                 {settingsNav.map((item) => {
                   const Icon = item.icon;
                   return (
                     <a
                       key={item.id}
                       href={`#${item.id}`}
-                      className="flex min-h-11 shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-black/55 transition hover:bg-[#c97b6b]/10 hover:text-[#c97b6b] dark:text-white/55 dark:hover:text-[#e8a898] xl:w-full"
+                      className="flex min-h-11 shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-[#ff7a4f]/10 hover:text-[#ff9c7a] xl:w-full"
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
@@ -330,15 +331,15 @@ const SettingsPage = () => {
             <Section id="profile" title="Profile" description="Update your display name and email" icon={User} delay={0.05}>
               <form onSubmit={handleProfileSave} className="space-y-5">
                 {/* Avatar */}
-                <div className="flex items-center gap-4 pb-4 border-b border-[#e8e4db] dark:border-[#243040]/50">
+                <div className="flex items-center gap-4 pb-4 border-b border-white/[0.08]">
                   <div className="relative">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#c97b6b] to-[#a65d50] flex items-center justify-center shadow-lg">
                       <span className="text-2xl font-serif font-bold text-white">{initial}</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-black dark:text-white">{user?.name || 'Reader'}</p>
-                    <p className="text-xs text-black/40 dark:text-white/40">{user?.email}</p>
+                    <p className="text-sm font-bold text-[#111827] dark:text-white">{user?.name || 'Reader'}</p>
+                    <p className="text-xs text-slate-500">{user?.email}</p>
                   </div>
                 </div>
 
@@ -389,8 +390,8 @@ const SettingsPage = () => {
                   rightElement={
                     <button type="button" onClick={() => setShowPasswords(s => ({ ...s, current: !s.current }))}>
                       {showPasswords.current
-                        ? <EyeOff className="w-4 h-4 text-black/30 dark:text-white/30" />
-                        : <Eye className="w-4 h-4 text-black/30 dark:text-white/30" />}
+                        ? <EyeOff className="w-4 h-4 text-slate-500" />
+                        : <Eye className="w-4 h-4 text-slate-500" />}
                     </button>
                   }
                 />
@@ -405,8 +406,8 @@ const SettingsPage = () => {
                     rightElement={
                       <button type="button" onClick={() => setShowPasswords(s => ({ ...s, new: !s.new }))}>
                         {showPasswords.new
-                          ? <EyeOff className="w-4 h-4 text-black/30 dark:text-white/30" />
-                          : <Eye className="w-4 h-4 text-black/30 dark:text-white/30" />}
+                          ? <EyeOff className="w-4 h-4 text-slate-500" />
+                          : <Eye className="w-4 h-4 text-slate-500" />}
                       </button>
                     }
                   />
@@ -420,8 +421,8 @@ const SettingsPage = () => {
                     rightElement={
                       <button type="button" onClick={() => setShowPasswords(s => ({ ...s, confirm: !s.confirm }))}>
                         {showPasswords.confirm
-                          ? <EyeOff className="w-4 h-4 text-black/30 dark:text-white/30" />
-                          : <Eye className="w-4 h-4 text-black/30 dark:text-white/30" />}
+                          ? <EyeOff className="w-4 h-4 text-slate-500" />
+                          : <Eye className="w-4 h-4 text-slate-500" />}
                       </button>
                     }
                   />
@@ -487,15 +488,15 @@ const SettingsPage = () => {
                   className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
                     !isDark
                       ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
-                      : 'border-[#e8e4db] bg-[#fcf9f2] hover:border-[#c97b6b]/25 dark:border-white/5 dark:bg-[#0f1419]'
+                      : 'border-white/[0.08] bg-[#070b12] hover:border-[#ff7a4f]/25'
                   }`}
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#c97b6b] shadow-sm dark:bg-white/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#ff9c7a] shadow-sm">
                     <Sun className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-black dark:text-white">Light mode</p>
-                    <p className="text-xs text-black/45 dark:text-white/45">Warm, clean reading workspace.</p>
+                    <p className="text-sm font-semibold text-[#111827] dark:text-white">Light mode</p>
+                    <p className="text-xs text-slate-500">Warm, clean reading workspace.</p>
                   </div>
                 </button>
 
@@ -505,15 +506,15 @@ const SettingsPage = () => {
                   className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
                     isDark
                       ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
-                      : 'border-[#e8e4db] bg-[#fcf9f2] hover:border-[#c97b6b]/25 dark:border-white/5 dark:bg-[#0f1419]'
+                      : 'border-white/[0.08] bg-[#070b12] hover:border-[#ff7a4f]/25'
                   }`}
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#111827] text-[#e8a898] shadow-sm">
                     <Moon className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-black dark:text-white">Dark mode</p>
-                    <p className="text-xs text-black/45 dark:text-white/45">Deep navy interface for focus.</p>
+                    <p className="text-sm font-semibold text-[#111827] dark:text-white">Dark mode</p>
+                    <p className="text-xs text-slate-500">Deep navy interface for focus.</p>
                   </div>
                 </button>
               </div>
@@ -523,16 +524,16 @@ const SettingsPage = () => {
             <Section id="danger-zone" title="Danger Zone" description="Session and account management" icon={LogOut} accentColor="#ef4444" delay={0.2}>
               <div className="space-y-4">
                 {/* Sign Out */}
-                <div className="flex items-center justify-between p-4 bg-[#fcf9f2] dark:bg-[#0f1419] rounded-xl border border-[#e8e4db] dark:border-[#243040]/50">
+                <div className="flex items-center justify-between p-4 bg-[#fcf9f2] rounded-xl border border-[#e8e4db] dark:bg-[#070b12] dark:border-white/[0.08]">
                   <div>
-                    <p className="text-sm font-semibold text-black dark:text-white">Sign out</p>
-                    <p className="text-xs text-black/40 dark:text-white/40">End your current session</p>
+                    <p className="text-sm font-semibold text-[#111827] dark:text-white">Sign out</p>
+                    <p className="text-xs text-slate-500">End your current session</p>
                   </div>
                   <motion.button
                     onClick={signOut}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-black/70 dark:text-white/70 transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-black/[0.05] hover:bg-black/[0.08] rounded-xl text-sm font-bold text-[#111827] transition-colors dark:bg-white/[0.06] dark:hover:bg-white/[0.1] dark:text-white"
                   >
                     <LogOut className="w-4 h-4" /> Sign Out
                   </motion.button>
@@ -558,7 +559,7 @@ const SettingsPage = () => {
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => setDeleteConfirm(false)}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-black/50 dark:text-white/50 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors"
                         >
                           Cancel
                         </button>

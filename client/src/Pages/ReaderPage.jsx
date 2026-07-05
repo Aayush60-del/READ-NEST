@@ -148,12 +148,17 @@ const ReaderPage = () => {
     const sessionReadPagesRef = useRef(new Set());
     const touchStartRef = useRef(null);
     const streakCelebrationAttemptedRef = useRef(false);
+    const bookCompletionCelebratedRef = useRef(false);
     const {
         isOpen: isStreakCelebrationOpen,
         previousStreak,
         newStreak,
         weeklyProgress,
         milestone,
+        type: celebrationType,
+        title: celebrationTitle,
+        message: celebrationMessage,
+        ctaLabel: celebrationCtaLabel,
         showStreakCelebration,
         closeStreakCelebration,
     } = useStreakCelebration();
@@ -242,6 +247,7 @@ const ReaderPage = () => {
             if (savedPage && savedPage > 1) {
                 setCurrentPage(savedPage);
             }
+            bookCompletionCelebratedRef.current = Boolean(progressRes?.data?.isCompleted);
 
             // 3. Restore bookmarks
             const bookmarkRes = await api
@@ -335,9 +341,28 @@ const ReaderPage = () => {
             setSaving(true);
             setSaveStatus('saving');
             try {
-                await api.post(ENDPOINTS.BOOKS.PROGRESS(id), payload);
+                const saveRes = await api.post(ENDPOINTS.BOOKS.PROGRESS(id), payload);
+                const savedProgress = unwrapApiPayload(saveRes);
+                const isBookCompleted = Boolean(savedProgress?.isCompleted) || percentageCompleted >= 100;
+
+                if (isBookCompleted && !bookCompletionCelebratedRef.current) {
+                    bookCompletionCelebratedRef.current = true;
+                    showStreakCelebration({
+                        type: 'book_finished',
+                        achievementKey: `book-finished:${id}`,
+                        force: true,
+                        previousStreak: 0,
+                        newStreak: 100,
+                        weeklyProgress: [],
+                        milestone: true,
+                        title: 'Book finished!',
+                        message: 'You turned the final page. Beautiful work.',
+                        ctaLabel: 'Nice',
+                    });
+                }
 
                 if (
+                    !isBookCompleted &&
                     !streakCelebrationAttemptedRef.current &&
                     sessionPagesRead >= MIN_SESSION_PAGES_FOR_READING_DAY
                 ) {
@@ -354,14 +379,31 @@ const ReaderPage = () => {
                             );
 
                             if (!updatedStreak) return;
+                            const isSevenDayMilestone = updatedStreak === 7;
+                            const isStreakMilestone = STREAK_MILESTONES.includes(updatedStreak);
 
                             showStreakCelebration({
+                                type: isSevenDayMilestone || isStreakMilestone ? 'streak' : 'pages_read',
+                                achievementKey: isSevenDayMilestone || isStreakMilestone
+                                    ? `streak:${updatedStreak}`
+                                    : `pages-read:${id}:${new Date().toISOString().slice(0, 10)}`,
                                 previousStreak: Number(
                                     streakPayload.previousStreak ?? Math.max(updatedStreak - 1, 0)
                                 ),
                                 newStreak: updatedStreak,
                                 weeklyProgress: getWeeklyProgress(streakPayload),
-                                milestone: STREAK_MILESTONES.includes(updatedStreak),
+                                milestone: isSevenDayMilestone || isStreakMilestone,
+                                title: isSevenDayMilestone
+                                    ? '7 day streak!'
+                                    : isStreakMilestone
+                                    ? `${updatedStreak} day streak!`
+                                    : '5 pages done!',
+                                message: isSevenDayMilestone
+                                    ? 'One full week complete. Your reading habit is getting strong.'
+                                    : isStreakMilestone
+                                    ? 'Milestone unlocked! Your reading habit is becoming powerful.'
+                                    : "Today's reading day is counted. Tiny session, real momentum.",
+                                ctaLabel: 'Keep Reading',
                             });
                         })
                         .catch((error) => {
@@ -414,7 +456,7 @@ const ReaderPage = () => {
         await saveProgress(currentPageRef.current, true);
 
         if (sessionPagesRead < MIN_SESSION_PAGES_FOR_READING_DAY) {
-            showToast("Read at least 5 pages to count today’s progress.", 'error');
+            showToast("Read at least 5 pages to count today's progress.", 'error');
             return;
         }
 
@@ -1102,6 +1144,10 @@ const ReaderPage = () => {
                 newStreak={newStreak}
                 weeklyProgress={weeklyProgress}
                 milestone={milestone}
+                type={celebrationType}
+                title={celebrationTitle}
+                message={celebrationMessage}
+                ctaLabel={celebrationCtaLabel}
             />
         </div>
     );

@@ -15,23 +15,23 @@ const StatCard = ({ icon: Icon, label, value, helper, accent = false }) => (
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className={`rounded-[28px] p-5 md:p-6 border shadow-sm relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${accent
-            ? 'bg-[#fff4ef] dark:bg-[#241714] border-[#c97b6b]/25 shadow-[#c97b6b]/5'
-            : 'bg-white dark:bg-[#161d27] border-[#e8e4db] dark:border-white/5 shadow-black/[0.03]'
+        className={`rounded-[28px] p-5 md:p-6 border relative overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 ${accent
+            ? 'bg-[#ff7a4f]/10 border-[#ff7a4f]/25'
+            : 'bg-white/75 border-[#e8e4db] dark:bg-[#0f1726]/75 dark:border-white/[0.08]'
             }`}
     >
         <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-[#c97b6b]/10 blur-2xl" />
         <div className="relative z-10 flex min-h-[138px] flex-col justify-between">
             <AnimateIcon animateOnView animateOnHover animation={accent ? 'pulse' : 'float'}>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${accent ? 'bg-[#c97b6b]/12 text-[#c97b6b]' : 'bg-black/[0.04] text-black/45 dark:bg-white/[0.06] dark:text-white/50'}`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${accent ? 'bg-[#ff7a4f]/12 text-[#ff9c7a]' : 'bg-white/[0.06] text-slate-400'}`}>
                     <Icon className="w-5 h-5" />
                 </div>
             </AnimateIcon>
             <div>
-                <div className={`text-3xl md:text-4xl font-semibold ${accent ? 'text-[#c97b6b]' : 'text-black dark:text-white'}`}>{value}</div>
-                <div className={`text-[10px] font-bold tracking-widest uppercase ${accent ? 'text-[#c97b6b]/70' : 'text-black/40 dark:text-white/40'}`}>{label}</div>
+                <div className={`text-3xl md:text-4xl font-semibold ${accent ? 'text-[#c96f5c] dark:text-[#ff9c7a]' : 'text-[#111827] dark:text-white'}`}>{value}</div>
+                <div className={`text-[10px] font-bold tracking-widest uppercase ${accent ? 'text-[#ff9c7a]/70' : 'text-slate-500'}`}>{label}</div>
                 {helper ? (
-                    <p className="mt-2 text-xs leading-5 text-black/45 dark:text-white/45">{helper}</p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">{helper}</p>
                 ) : null}
             </div>
         </div>
@@ -39,7 +39,7 @@ const StatCard = ({ icon: Icon, label, value, helper, accent = false }) => (
 );
 
 const LoadingBlock = ({ className = '' }) => (
-    <div className={`animate-pulse rounded-[28px] border border-[#e8e4db] bg-white/70 dark:border-white/5 dark:bg-[#161d27]/70 ${className}`} />
+    <div className={`animate-pulse rounded-[28px] border border-white/[0.08] bg-white/[0.05] ${className}`} />
 );
 
 
@@ -126,29 +126,30 @@ const ReadingStatsPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#fcf9f2] dark:bg-[#0f1419] text-[#1a1a1a] dark:text-[#e4e2e1] font-sans flex transition-colors duration-300">
+        <div className="min-h-screen bg-[#fcf9f2] text-[#111827] font-sans flex transition-colors duration-300 dark:bg-[#070b12] dark:text-white">
             <Sidebar />
 
             <main className="flex-1 min-w-0 w-full overflow-x-hidden lg:ml-[256px] relative z-10 transition-all duration-300 ease-in-out min-h-screen pb-24 lg:pb-20">
                 <DashboardNavbar />
 
-                <div className="ml-0 mr-auto max-w-[1240px] w-full px-4 sm:px-10 pt-6">
-                    <div className="mb-8 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7">
+                <div className="relative ml-0 mr-auto max-w-[1240px] w-full px-4 sm:px-10 pt-6">
+                    <div className="pointer-events-none absolute left-10 top-0 h-72 w-72 rounded-full bg-[#c97b6b]/10 blur-3xl" />
+                    <div className="relative z-10 mb-8 rounded-[32px] border border-[#e8e4db] bg-white/75 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-7">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div>
                             <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-[#c97b6b] mb-3">Reading Analytics</p>
-                            <h1 className="text-3xl sm:text-4xl font-semibold text-black dark:text-white mb-3 tracking-tight">Your reading habit, visualized.</h1>
-                            <p className="text-black/60 dark:text-white/60 text-sm md:text-base tracking-wide max-w-2xl">
+                            <h1 className="text-3xl sm:text-4xl font-semibold text-[#111827] dark:text-white mb-3 tracking-tight">Your reading habit, visualized.</h1>
+                            <p className="text-slate-400 text-sm md:text-base tracking-wide max-w-2xl">
                                 Track your streaks, pages, books, and consistency in one calm dashboard.
                             </p>
                         </div>
-                        <div className="bg-white dark:bg-[#161d27] border border-[#c97b6b]/20 rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-[#c97b6b]/5 shrink-0">
-                            <div className="w-11 h-11 rounded-2xl bg-[#c97b6b]/10 flex items-center justify-center">
-                                <Flame className="w-5 h-5 text-[#c97b6b]" />
+                        <div className="bg-white/[0.04] border border-[#ff7a4f]/20 rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-[#c97b6b]/5 shrink-0">
+                            <div className="w-11 h-11 rounded-2xl bg-[#ff7a4f]/10 flex items-center justify-center">
+                                <Flame className="w-5 h-5 text-[#ff9c7a]" />
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold tracking-widest text-black/50 dark:text-white/50 uppercase">Current Streak</div>
-                                <div className="font-serif text-2xl text-black dark:text-white">{loading ? '-' : streak} Days</div>
+                                <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Current Streak</div>
+                                <div className="text-2xl font-semibold text-[#111827] dark:text-white">{loading ? '-' : streak} Days</div>
                             </div>
                         </div>
                     </div>
@@ -169,11 +170,11 @@ const ReadingStatsPage = () => {
                             <LoadingBlock className="min-h-[280px] xl:col-span-5" />
                         </div>
                     ) : !hasData ? (
-                        <div className="bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-transparent rounded-[28px] p-10 flex flex-col items-center justify-center shadow-lg min-h-[340px]">
-                            <Book className="w-12 h-12 text-black/20 dark:text-white/20 mb-4" />
-                            <h2 className="text-2xl font-serif text-black dark:text-white mb-2">No reading data yet</h2>
-                            <p className="text-black/50 dark:text-white/50 text-center mb-6 max-w-md">Open a book and read at least 5 pages to start building your heatmap and streak.</p>
-                            <Link to="/discover" className="px-6 py-3 rounded-xl bg-[#c97b6b] text-white text-sm font-bold tracking-widest uppercase hover:bg-[#b8695c] transition-colors">
+                        <div className="bg-white/75 border border-[#e8e4db] rounded-[28px] p-10 flex flex-col items-center justify-center shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl min-h-[340px] dark:bg-[#0f1726]/75 dark:border-white/[0.08] dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+                            <Book className="w-12 h-12 text-slate-600 mb-4" />
+                            <h2 className="text-2xl font-semibold text-[#111827] dark:text-white mb-2">No reading data yet</h2>
+                            <p className="text-slate-400 text-center mb-6 max-w-md">Open a book and read at least 5 pages to start building your heatmap and streak.</p>
+                            <Link to="/discover" className="px-6 py-3 rounded-xl bg-[#ff7a4f] text-white text-sm font-bold tracking-widest uppercase hover:bg-[#e9683f] transition-colors">
                                 Discover Books
                             </Link>
                         </div>
@@ -183,7 +184,7 @@ const ReadingStatsPage = () => {
                                 initial={{ opacity: 0, y: 18 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.45 }}
-                                className="xl:col-span-8 bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-white/5 rounded-[28px] p-5 md:p-7 shadow-lg"
+                                className="xl:col-span-8 bg-white/75 border border-[#e8e4db] rounded-[28px] p-5 md:p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:bg-[#0f1726]/75 dark:border-white/[0.08] dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]"
                             >
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                                     <div>
@@ -191,13 +192,13 @@ const ReadingStatsPage = () => {
                                             <CalendarDays className="w-4 h-4" />
                                             <span className="text-[10px] font-bold tracking-widest uppercase">30-DAY MONTH VIEW</span>
                                         </div>
-                                        <h2 className="text-2xl md:text-3xl font-serif text-black dark:text-white">Consistency calendar</h2>
+                                        <h2 className="text-2xl md:text-3xl font-semibold text-[#111827] dark:text-white">Consistency calendar</h2>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                         <span>Less</span>
 
-                                        <span className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/5 flex items-center justify-center">
-                                            <Flame className="w-3.5 h-3.5 text-black/20 dark:text-white/25" />
+                                        <span className="w-7 h-7 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
+                                            <Flame className="w-3.5 h-3.5 text-slate-600" />
                                         </span>
 
                                         <span className="w-7 h-7 rounded-full bg-[#3a2417]/80 border border-[#ff7a1a]/10 flex items-center justify-center">
@@ -213,7 +214,7 @@ const ReadingStatsPage = () => {
                                 </div>
 
                                 <div className="mt-5 mb-5 flex items-center justify-between gap-4">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-black/45 dark:text-white/45">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
                                         {heatmapRangeLabel}
                                     </p>
 
@@ -223,10 +224,10 @@ const ReadingStatsPage = () => {
                                 </div>
 
                                 {readDates.length === 0 ? (
-                                    <div className="rounded-[24px] border border-dashed border-[#d7cfc4] bg-[#fcf9f2] p-8 text-center dark:border-white/10 dark:bg-[#0f1419]/50">
+                                    <div className="rounded-[24px] border border-dashed border-white/[0.12] bg-white/[0.03] p-8 text-center">
                                         <CalendarDays className="mx-auto mb-3 h-8 w-8 text-[#c97b6b]" />
-                                        <p className="text-sm font-semibold text-black dark:text-white">Read at least 5 pages to light up your heatmap.</p>
-                                        <p className="mt-2 text-xs leading-5 text-black/50 dark:text-white/50">Your last 30 days of reading activity will appear here once progress is logged.</p>
+                                        <p className="text-sm font-semibold text-[#111827] dark:text-white">Read at least 5 pages to light up your heatmap.</p>
+                                        <p className="mt-2 text-xs leading-5 text-slate-500">Your last 30 days of reading activity will appear here once progress is logged.</p>
                                     </div>
                                 ) : (
                                 <div className="overflow-x-auto pb-2 scrollbar-hide">
@@ -259,7 +260,7 @@ const ReadingStatsPage = () => {
                                                             ? 'bg-[#3a2417] border-[#ff7a1a]/30 shadow-[0_0_20px_rgba(255,122,26,0.30)]'
                                                             : day.isToday
                                                                 ? 'bg-[#fff1e8] dark:bg-[#2d1d14] border-[#ff7a1a]/45'
-                                                                : 'bg-black/[0.035] dark:bg-white/[0.055] border-black/5 dark:border-white/5 hover:bg-[#3a2417]/45 hover:border-[#ff7a1a]/20'
+                                                                : 'bg-white/[0.055] border-white/[0.08] hover:bg-[#3a2417]/45 hover:border-[#ff7a1a]/20'
                                                     }`}
                                                 >
                                                     <span
@@ -268,7 +269,7 @@ const ReadingStatsPage = () => {
                                                                 ? 'text-[#ffb26b]'
                                                                 : day.isToday
                                                                     ? 'text-[#ff7a1a]/80'
-                                                                    : 'text-black/30 dark:text-white/30'
+                                                                    : 'text-slate-600'
                                                         }`}
                                                     >
                                                         {dayLabel}
@@ -284,7 +285,7 @@ const ReadingStatsPage = () => {
                                                             className={`my-1 text-[13px] font-black leading-none ${
                                                                 day.isToday
                                                                     ? 'text-[#ff7a1a]'
-                                                                    : 'text-black/45 dark:text-white/45'
+                                                                    : 'text-slate-500'
                                                             }`}
                                                         >
                                                             {dateNumber}
@@ -297,7 +298,7 @@ const ReadingStatsPage = () => {
                                                                 ? 'text-white/55'
                                                                 : day.isToday
                                                                     ? 'text-[#ff7a1a]/80'
-                                                                    : 'text-black/25 dark:text-white/25'
+                                                                    : 'text-slate-600'
                                                         }`}
                                                     >
                                                         {monthLabel} {day.read ? dateNumber : ""}
@@ -357,13 +358,13 @@ const ReadingStatsPage = () => {
                                 </div>
                             </motion.section>
 
-                            <section className="xl:col-span-7 bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-white/5 rounded-[28px] p-5 md:p-7 shadow-lg">
+                            <section className="xl:col-span-7 bg-white/75 border border-[#e8e4db] rounded-[28px] p-5 md:p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:bg-[#0f1726]/75 dark:border-white/[0.08] dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <p className="text-[10px] font-bold tracking-widest uppercase text-[#c97b6b] mb-2">Weekly rhythm</p>
-                                        <h2 className="text-2xl font-serif text-black dark:text-white">Activity by week</h2>
+                                        <h2 className="text-2xl font-semibold text-[#111827] dark:text-white">Activity by week</h2>
                                     </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Last 5 weeks</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Last 5 weeks</span>
                                 </div>
                                 {weeklyActivity.some(Boolean) ? (
                                 <div className="flex items-end gap-3 h-44">
@@ -373,23 +374,23 @@ const ReadingStatsPage = () => {
                                                 initial={{ height: 4 }}
                                                 animate={{ height: `${Math.max(7, (count / 7) * 100)}%` }}
                                                 transition={{ duration: 0.6, delay: index * 0.03 }}
-                                                className={`w-full rounded-t-xl ${count ? 'bg-[#c97b6b]' : 'bg-black/5 dark:bg-white/10'}`}
+                                                className={`w-full rounded-t-xl ${count ? 'bg-[#c97b6b]' : 'bg-white/10'}`}
                                                 title={`${count} reading days`}
                                             />
-                                            <span className="text-[10px] font-bold text-black/35 dark:text-white/35">{count}</span>
+                                            <span className="text-[10px] font-bold text-slate-500">{count}</span>
                                         </div>
                                     ))}
                                 </div>
                                 ) : (
-                                    <div className="flex h-44 items-center justify-center rounded-[24px] border border-dashed border-[#d7cfc4] bg-[#fcf9f2] p-6 text-center dark:border-white/10 dark:bg-[#0f1419]/50">
-                                        <p className="text-sm text-black/55 dark:text-white/55">Weekly reading bars will appear after your first logged reading day.</p>
+                                    <div className="flex h-44 items-center justify-center rounded-[24px] border border-dashed border-white/[0.12] bg-white/[0.03] p-6 text-center">
+                                        <p className="text-sm text-slate-400">Weekly reading bars will appear after your first logged reading day.</p>
                                     </div>
                                 )}
                             </section>
 
-                            <section className="xl:col-span-5 bg-white dark:bg-[#161d27] border border-[#e8e4db] dark:border-white/5 rounded-[28px] p-5 md:p-7 shadow-lg">
+                            <section className="xl:col-span-5 bg-white/75 border border-[#e8e4db] rounded-[28px] p-5 md:p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:bg-[#0f1726]/75 dark:border-white/[0.08] dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                                 <p className="text-[10px] font-bold tracking-widest uppercase text-[#c97b6b] mb-2">Milestones</p>
-                                <h2 className="text-2xl font-serif text-black dark:text-white mb-6">Reader achievements</h2>
+                                <h2 className="text-2xl font-semibold text-[#111827] dark:text-white mb-6">Reader achievements</h2>
                                 <div className="space-y-3">
                                     {[
                                         { label: 'First book started', done: currentlyReading > 0 || booksRead > 0 },
@@ -397,15 +398,15 @@ const ReadingStatsPage = () => {
                                         { label: '1,000 pages read', done: pagesRead >= 1000 },
                                         { label: 'Finish 5 books', done: booksRead >= 5 },
                                     ].map((item) => (
-                                        <div key={item.label} className={`flex items-center gap-3 p-3 rounded-2xl border ${item.done ? 'bg-[#c97b6b]/10 border-[#c97b6b]/20' : 'bg-black/[0.025] dark:bg-white/[0.035] border-black/5 dark:border-white/5'}`}>
-                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${item.done ? 'bg-[#c97b6b] text-white' : 'bg-black/5 dark:bg-white/10 text-black/30 dark:text-white/30'}`}>
+                                        <div key={item.label} className={`flex items-center gap-3 p-3 rounded-2xl border ${item.done ? 'bg-[#c97b6b]/10 border-[#c97b6b]/20' : 'bg-white/[0.035] border-white/[0.08]'}`}>
+                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${item.done ? 'bg-[#c97b6b] text-white' : 'bg-white/10 text-slate-500'}`}>
                                                 <AnimateIcon animateOnHover animation={item.done ? 'spark' : 'float'}>
                                                     <Trophy className="w-4 h-4" />
                                                 </AnimateIcon>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-black dark:text-white">{item.label}</p>
-                                                <p className="text-[11px] text-black/40 dark:text-white/40">{item.done ? 'Unlocked' : 'Keep reading to unlock'}</p>
+                                                <p className="text-sm font-bold text-[#111827] dark:text-white">{item.label}</p>
+                                                <p className="text-[11px] text-slate-500">{item.done ? 'Unlocked' : 'Keep reading to unlock'}</p>
                                             </div>
                                         </div>
                                     ))}

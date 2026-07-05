@@ -36,13 +36,13 @@ export const Sidebar = () => {
 
     return (
         <motion.aside
-            className="fixed inset-y-0 left-0 z-50 bg-card hidden lg:flex flex-col pt-8 pb-8 border-r border-border transition-colors w-[256px]"
+            className="fixed inset-y-0 left-0 z-50 hidden w-[256px] flex-col border-r border-[#e8e4db] bg-[#fffaf3] pt-8 pb-8 text-[#111827] shadow-[20px_0_60px_rgba(15,23,42,0.08)] transition-colors dark:border-white/[0.08] dark:bg-[#0f1726] dark:text-white dark:shadow-[20px_0_60px_rgba(0,0,0,0.24)] lg:flex"
         >
             <div className="px-8 mb-10">
                 <NavLink to="/overview" className="block">
-                    <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground transition-colors">ReadNest</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-[#111827] transition-colors dark:text-white">ReadNest</h1>
                 </NavLink>
-                <p className="text-[10px] tracking-[0.2em] text-primary mt-1 uppercase opacity-80 transition-colors">Literary Sanctuary</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#ff9c7a] opacity-80 transition-colors">Literary Sanctuary</p>
             </div>
 
             <nav className="flex-1 px-4 space-y-2">
@@ -55,18 +55,18 @@ export const Sidebar = () => {
                             className={({ isActive }) => `
                                 flex items-center px-4 py-3 rounded-lg transition-all duration-200 group relative
                                 ${isActive
-                                    ? 'bg-primary/10 text-primary font-semibold'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                    ? 'bg-[#ff7a4f]/12 text-[#c96f5c] font-semibold dark:text-[#ff9c7a]'
+                                    : 'text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
                                 }
                             `}
                         >
                             {({ isActive }) => (
                                 <>
-                                    {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md transition-colors"></div>}
+                                    {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#ff7a4f] rounded-r-md transition-colors"></div>}
                                     <AnimateIcon animate={isActive} animateOnHover animation={isActive ? 'pulse' : 'float'} className="mr-4">
-                                        <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                                        <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[#c96f5c] dark:text-[#ff9c7a]' : 'text-slate-500 dark:text-slate-400'}`} />
                                     </AnimateIcon>
-                                    <span className={`text-sm tracking-wide transition-colors ${isActive ? 'text-primary' : ''}`}>{item.label}</span>
+                                    <span className={`text-sm tracking-wide transition-colors ${isActive ? 'text-[#c96f5c] dark:text-[#ff9c7a]' : ''}`}>{item.label}</span>
                                 </>
                             )}
                         </NavLink>
@@ -75,17 +75,17 @@ export const Sidebar = () => {
             </nav>
 
             <div className="px-6 mt-auto flex flex-col gap-6">
-                <div className="space-y-1 border-t border-border pt-4">
+                <div className="space-y-1 border-t border-[#e8e4db] pt-4 dark:border-white/[0.08]">
                     <NavLink
                         to="/settings"
-                        className="flex items-center px-4 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all text-sm font-medium tracking-wide"
+                        className="flex items-center px-4 py-2.5 rounded-lg text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] transition-all text-sm font-medium tracking-wide dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white"
                     >
                         <AnimateIcon animateOnHover animation="turn" className="mr-4"><Settings className="w-4 h-4" /></AnimateIcon>
                         Settings
                     </NavLink>
                     <NavLink
                         to="/feedback"
-                        className="w-full flex items-center px-4 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all text-sm font-medium tracking-wide"
+                        className="w-full flex items-center px-4 py-2.5 rounded-lg text-slate-600 hover:bg-[#ff7a4f]/8 hover:text-[#111827] transition-all text-sm font-medium tracking-wide dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-white"
                     >
                         <AnimateIcon animateOnHover animation="pulse" className="mr-4"><HelpCircle className="w-4 h-4" /></AnimateIcon>
                         Support

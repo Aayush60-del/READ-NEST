@@ -66,7 +66,7 @@ const BookCard = ({
     >
       <div
         className={cn(
-          'relative aspect-[2/3] w-full overflow-hidden border border-black/10 bg-[#f2e8dc] transition-shadow duration-300 group-hover:shadow-2xl dark:border-white/10 dark:bg-[#1c2535]',
+          'relative aspect-[2/3] w-full overflow-hidden border border-black/10 bg-[#f4eadf] transition-shadow duration-300 group-hover:shadow-2xl dark:border-white/10 dark:bg-[#1c2535]',
           styles.cover
         )}
       >
@@ -117,7 +117,7 @@ const BookCard = ({
 
       <h3
         className={cn(
-          'text-black transition-colors group-hover:text-[#a65d50] dark:text-white dark:group-hover:text-[#c97b6b]',
+          'text-black transition-colors group-hover:text-[#a65d50] dark:text-white dark:group-hover:text-[#ff9c7a]',
           styles.title
         )}
         title={title}
@@ -127,7 +127,7 @@ const BookCard = ({
 
       {showAuthor && (
         <p
-          className={cn('mt-1 truncate text-black/40 dark:text-white/40', styles.author)}
+          className={cn('mt-1 truncate text-black/45 group-hover:text-black/60 dark:text-slate-500 dark:group-hover:text-slate-400', styles.author)}
           title={author}
         >
           {author}
@@ -136,13 +136,13 @@ const BookCard = ({
 
       {showProgress && (
         <div className="mt-3">
-          <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-black/45 dark:text-white/45">
+          <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-black/45 dark:text-slate-500">
             <span>{isCompleted ? 'Completed' : 'Progress'}</span>
             <span>{isCompleted ? '100%' : pageLabel || `${progressValue}%`}</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
             <div
-              className="h-full rounded-full bg-[#c97b6b] transition-all duration-500"
+              className="h-full rounded-full bg-[#ff7a4f] transition-all duration-500"
               style={{ width: `${progressValue}%` }}
             />
           </div>

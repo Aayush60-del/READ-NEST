@@ -26,23 +26,23 @@ const getStatsValue = (stats, key, fallback = 0) => {
 };
 
 const SummaryCard = ({ icon: Icon, label, value, loading, accent = false }) => (
-    <div className={`flex min-h-[142px] flex-col justify-between rounded-[28px] border p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+    <div className={`flex min-h-[142px] flex-col justify-between rounded-[28px] border p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 ${
         accent
-            ? 'border-[#c97b6b]/25 bg-[#fff4ef] shadow-[#c97b6b]/5 dark:bg-[#241714]'
-            : 'border-[#e8e4db] bg-white shadow-black/[0.03] dark:border-white/5 dark:bg-[#161d27]'
+            ? 'border-[#ff7a4f]/25 bg-[#ff7a4f]/10 text-[#ff9c7a]'
+            : 'border-[#e8e4db] bg-white/75 dark:border-white/[0.08] dark:bg-[#0f1726]/75'
     }`}>
         <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
             accent
-                ? 'bg-[#c97b6b]/12 text-[#c97b6b]'
-                : 'bg-black/[0.04] text-black/45 dark:bg-white/[0.06] dark:text-white/50'
+                ? 'bg-[#ff7a4f]/12 text-[#ff9c7a]'
+                : 'bg-white/[0.06] text-slate-400'
         }`}>
             <Icon className="h-5 w-5" />
         </div>
         <div>
-            <div className={`text-3xl font-semibold ${accent ? 'text-[#c97b6b]' : 'text-black dark:text-white'}`}>
+            <div className={`text-3xl font-semibold ${accent ? 'text-[#c96f5c] dark:text-[#ff9c7a]' : 'text-[#111827] dark:text-white'}`}>
                 {loading ? '-' : value}
             </div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                 {label}
             </div>
         </div>
@@ -53,28 +53,28 @@ const LoadingGrid = () => (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, index) => (
             <div key={index} className="min-w-0">
-                <div className="aspect-[2/3] w-full animate-pulse rounded-2xl border border-[#e8e4db] bg-white/80 shadow-sm dark:border-white/5 dark:bg-[#161d27]" />
-                <div className="mt-4 h-4 w-3/4 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
-                <div className="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
-                <div className="mt-4 h-11 animate-pulse rounded-2xl bg-black/10 dark:bg-white/10" />
+                <div className="aspect-[2/3] w-full animate-pulse rounded-2xl border border-white/[0.08] bg-white/[0.05]" />
+                <div className="mt-4 h-4 w-3/4 animate-pulse rounded-full bg-white/[0.08]" />
+                <div className="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-white/[0.08]" />
+                <div className="mt-4 h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
             </div>
         ))}
     </div>
 );
 
 const EmptyState = ({ icon: Icon = BookOpen, title, text, action, onAction, to }) => (
-    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[32px] border border-dashed border-[#d7cfc4] bg-white/70 p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#161d27]/70">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#c97b6b]/10 text-[#c97b6b]">
+    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[32px] border border-dashed border-[#d7cfc4] bg-white/75 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.12] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#ff7a4f]/10 text-[#ff9c7a]">
             <Icon className="h-6 w-6" />
         </div>
-        <h2 className="text-2xl font-semibold text-black dark:text-white">{title}</h2>
-        <p className="mt-3 max-w-md text-sm leading-6 text-black/55 dark:text-white/55">{text}</p>
+        <h2 className="text-2xl font-semibold text-[#111827] dark:text-white">{title}</h2>
+        <p className="mt-3 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">{text}</p>
         {to ? (
-            <Link to={to} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]">
+            <Link to={to} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#ff7a4f] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#e9683f]">
                 {action}
             </Link>
         ) : (
-            <button type="button" onClick={onAction} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]">
+            <button type="button" onClick={onAction} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#ff7a4f] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#e9683f]">
                 <RotateCcw className="h-4 w-4" />
                 {action}
             </button>
@@ -173,64 +173,65 @@ const LibraryPage = () => {
         : `No books found in the ${activeTab.toLowerCase()} filter.`;
 
     return (
-        <div className="min-h-screen bg-[#fcf9f2] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#0f1419] dark:text-[#e4e2e1]">
+        <div className="min-h-screen bg-[#fcf9f2] text-[#111827] transition-colors duration-300 dark:bg-[#070b12] dark:text-white">
             <Sidebar />
 
             <main className="min-h-screen w-full min-w-0 overflow-x-hidden pb-28 transition-all duration-300 ease-in-out lg:ml-[256px] lg:pb-16">
                 <DashboardNavbar />
 
-                <div className="ml-0 mr-auto w-full max-w-[1240px] px-4 pb-8 pt-4 sm:px-10 sm:pt-6">
-                    <section className="mb-8 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7">
+                <div className="relative ml-0 mr-auto w-full max-w-[1240px] px-4 pb-8 pt-4 sm:px-10 sm:pt-6">
+                    <div className="pointer-events-none absolute left-10 top-0 h-72 w-72 rounded-full bg-[#c97b6b]/10 blur-3xl" />
+                    <section className="relative z-10 mb-8 rounded-[32px] border border-[#e8e4db] bg-white/75 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-7">
                         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                             <div>
                                 <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-[#c97b6b]">Reading workspace</p>
-                                <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white sm:text-4xl">
+                                <h1 className="text-3xl font-semibold tracking-tight text-[#111827] dark:text-white sm:text-4xl">
                                     My Library
                                 </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55 dark:text-white/55 sm:text-base">
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400 sm:text-base">
                                     Your personal reading space. Continue books, track progress, and organize your reading journey.
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 rounded-3xl border border-[#e8e4db] bg-white p-2 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+                            <div className="grid grid-cols-3 gap-2 rounded-3xl border border-[#e8e4db] bg-white/70 p-2 text-center shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
                                 <div className="px-3 py-2">
-                                    <p className="text-lg font-semibold text-black dark:text-white">{loading ? '-' : totalBooks}</p>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Books</p>
+                                    <p className="text-lg font-semibold text-[#111827] dark:text-white">{loading ? '-' : totalBooks}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Books</p>
                                 </div>
                                 <div className="px-3 py-2">
-                                    <p className="text-lg font-semibold text-black dark:text-white">{loading ? '-' : currentlyReading}</p>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Reading</p>
+                                    <p className="text-lg font-semibold text-[#111827] dark:text-white">{loading ? '-' : currentlyReading}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Reading</p>
                                 </div>
                                 <div className="px-3 py-2">
-                                    <p className="text-lg font-semibold text-black dark:text-white">{loading ? '-' : completedBooks}</p>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Done</p>
+                                    <p className="text-lg font-semibold text-[#111827] dark:text-white">{loading ? '-' : completedBooks}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Done</p>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+                    <section className="relative z-10 mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
                         <SummaryCard icon={Library} label="Total Books" value={totalBooks} loading={loading} />
                         <SummaryCard icon={BookOpen} label="Currently Reading" value={getStatsValue(stats, 'CurrentlyReading', currentlyReading)} loading={loading} />
                         <SummaryCard icon={Trophy} label="Completed" value={getStatsValue(stats, 'CompletedBooks', completedBooks)} loading={loading} />
                         <SummaryCard icon={Percent} label="Average Progress" value={`${averageProgress}%`} loading={loading} accent />
                     </section>
 
-                    <section className="mb-8 rounded-[28px] border border-[#e8e4db] bg-white p-3 shadow-sm dark:border-white/5 dark:bg-[#161d27]">
+                    <section className="relative z-10 mb-8 rounded-[28px] border border-[#e8e4db] bg-white/75 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
-                                <SearchIcon className="h-5 w-5 shrink-0 text-black/40 dark:text-white/40" />
+                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 py-3 dark:border-white/[0.08] dark:bg-[#070b12]">
+                                <SearchIcon className="h-5 w-5 shrink-0 text-slate-500" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(event) => setSearchQuery(event.target.value)}
                                     placeholder="Search by title, author, or category..."
-                                    className="w-full border-none bg-transparent p-0 text-sm text-black outline-none placeholder:text-black/30 focus:ring-0 dark:text-white dark:placeholder:text-white/30"
+                                    className="w-full border-none bg-transparent p-0 text-sm text-[#111827] outline-none placeholder:text-slate-400 focus:ring-0 dark:text-white dark:placeholder:text-slate-600"
                                 />
                             </div>
 
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <div className="flex rounded-full border border-[#e8e4db] bg-[#fcf9f2] p-1.5 dark:border-white/5 dark:bg-[#0f1419]">
+                                <div className="flex rounded-full border border-[#e8e4db] bg-[#fcf9f2] p-1.5 dark:border-white/[0.08] dark:bg-[#070b12]">
                                     {['All', 'Reading', 'Completed'].map(tab => (
                                         <button
                                             key={tab}
@@ -239,7 +240,7 @@ const LibraryPage = () => {
                                             className={`min-h-10 flex-1 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all sm:flex-none sm:px-5 ${
                                                 activeTab === tab
                                                     ? 'bg-[#c97b6b] text-white shadow-sm'
-                                                    : 'text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white'
+                                                    : 'text-slate-500 hover:text-[#111827] dark:hover:text-white'
                                             }`}
                                         >
                                             {tab}
@@ -247,13 +248,13 @@ const LibraryPage = () => {
                                     ))}
                                 </div>
 
-                                <div className="relative flex min-h-12 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 dark:border-white/5 dark:bg-[#0f1419]">
-                                    <SlidersHorizontal className="h-4 w-4 text-black/35 dark:text-white/35" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Sort</span>
+                                <div className="relative flex min-h-12 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 dark:border-white/[0.08] dark:bg-[#070b12]">
+                                    <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sort</span>
                                     <select
                                         value={sortBy}
                                         onChange={(event) => setSortBy(event.target.value)}
-                                        className="w-full cursor-pointer appearance-none border-none bg-transparent py-0 pl-0 pr-8 text-sm font-medium text-black focus:ring-0 dark:text-white sm:w-auto"
+                                        className="w-full cursor-pointer appearance-none border-none bg-transparent py-0 pl-0 pr-8 text-sm font-medium text-[#111827] focus:ring-0 dark:text-white sm:w-auto"
                                     >
                                         <option value="recent">Recently Read</option>
                                         <option value="progress">Progress</option>
@@ -308,8 +309,8 @@ const LibraryPage = () => {
                                             to={`/books/${book.id}/read`}
                                             className={`mt-4 flex min-h-11 w-full items-center justify-center rounded-2xl px-3 py-3 text-center text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${
                                                 book.status === 'completed'
-                                                    ? 'border border-black/10 bg-white text-black hover:bg-black/5 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10'
-                                                    : 'bg-[#3b2a1a] text-white shadow-lg hover:opacity-90 dark:bg-white dark:text-black'
+                                                    ? 'border border-[#e8e4db] bg-white/70 text-[#111827] hover:border-[#c97b6b]/35 hover:text-[#c96f5c] dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:hover:border-[#ff7a4f]/35 dark:hover:text-[#ff9c7a]'
+                                                    : 'bg-[#ff7a4f] text-white shadow-lg shadow-[#ff7a4f]/15 hover:bg-[#e9683f]'
                                             }`}
                                         >
                                             {book.status === 'completed' ? 'Read Again' : 'Continue Reading'}

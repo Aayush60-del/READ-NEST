@@ -35,18 +35,18 @@ const getBookCategories = (book) => {
 const getPrimaryCategory = (book) => getBookCategories(book)[0] || '';
 
 const EmptyState = ({ title, text, action, onAction, to, icon: Icon = BookOpen }) => (
-    <div className="flex min-h-[340px] flex-col items-center justify-center rounded-[32px] border border-dashed border-[#d7cfc4] bg-white/70 p-8 text-center shadow-sm dark:border-white/10 dark:bg-[#161d27]/70">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#c97b6b]/10 text-[#c97b6b]">
+    <div className="flex min-h-[340px] flex-col items-center justify-center rounded-[32px] border border-dashed border-[#d7cfc4] bg-white/75 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.12] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#ff7a4f]/10 text-[#ff9c7a]">
             <Icon className="h-6 w-6" />
         </div>
-        <h2 className="text-2xl font-semibold text-black dark:text-white">{title}</h2>
-        <p className="mt-3 max-w-md text-sm leading-6 text-black/55 dark:text-white/55">{text}</p>
+        <h2 className="text-2xl font-semibold text-[#111827] dark:text-white">{title}</h2>
+        <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">{text}</p>
         {to ? (
-            <Link to={to} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]">
+            <Link to={to} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#ff7a4f] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#e9683f]">
                 {action}
             </Link>
         ) : (
-            <button type="button" onClick={onAction} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#c97b6b] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#b8695c]">
+            <button type="button" onClick={onAction} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#ff7a4f] px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#e9683f]">
                 <RefreshCw className="h-4 w-4" />
                 {action}
             </button>
@@ -56,13 +56,13 @@ const EmptyState = ({ title, text, action, onAction, to, icon: Icon = BookOpen }
 
 const LoadingShelves = () => (
     <>
-        <div className="mb-10 grid min-h-[360px] animate-pulse rounded-[32px] border border-[#e8e4db] bg-white/70 dark:border-white/5 dark:bg-[#161d27]/70 lg:grid-cols-[0.72fr_1fr]" />
+        <div className="mb-10 grid min-h-[360px] animate-pulse rounded-[32px] border border-white/[0.08] bg-white/[0.05] lg:grid-cols-[0.72fr_1fr]" />
         <div className="flex gap-5 overflow-hidden pb-4">
             {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="w-[145px] shrink-0 sm:w-[180px] lg:w-[210px]">
-                    <div className="aspect-[2/3] animate-pulse rounded-2xl bg-white dark:bg-[#161d27]" />
-                    <div className="mt-4 h-4 w-3/4 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
-                    <div className="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+                    <div className="aspect-[2/3] animate-pulse rounded-2xl bg-white/[0.05]" />
+                    <div className="mt-4 h-4 w-3/4 animate-pulse rounded-full bg-white/[0.08]" />
+                    <div className="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-white/[0.08]" />
                 </div>
             ))}
         </div>
@@ -151,30 +151,31 @@ const DiscoverPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#fcf9f2] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#0f1419] dark:text-[#e4e2e1]">
+        <div className="min-h-screen bg-[#fcf9f2] text-[#111827] transition-colors duration-300 dark:bg-[#070b12] dark:text-white">
             <Sidebar />
 
             <main className="min-h-screen w-full min-w-0 overflow-x-hidden pb-28 transition-all duration-300 ease-in-out lg:ml-[256px] lg:pb-16">
                 <DashboardNavbar />
 
-                <div className="ml-0 mr-auto w-full max-w-[1240px] px-4 pb-8 pt-4 sm:px-10 sm:pt-6">
-                    <section className="mb-6 rounded-[32px] border border-[#e8e4db] bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-[#161d27]/70 sm:p-7">
+                <div className="relative ml-0 mr-auto w-full max-w-[1240px] px-4 pb-8 pt-4 sm:px-10 sm:pt-6">
+                    <div className="pointer-events-none absolute left-10 top-0 h-72 w-72 rounded-full bg-[#c97b6b]/10 blur-3xl" />
+                    <section className="relative z-10 mb-6 rounded-[32px] border border-[#e8e4db] bg-white/75 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-7">
                         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                             <div>
-                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8e4db] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-black/45 dark:border-white/10 dark:bg-white/5 dark:text-white/45">
-                                    <Compass className="h-3.5 w-3.5 text-[#c97b6b]" />
+                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                    <Compass className="h-3.5 w-3.5 text-[#ff9c7a]" />
                                     Book marketplace
                                 </div>
-                                <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white sm:text-4xl">
+                                <h1 className="text-3xl font-semibold tracking-tight text-[#111827] dark:text-white sm:text-4xl">
                                     Discover Books
                                 </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55 dark:text-white/55 sm:text-base">
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
                                     Find your next read, explore curated titles, and build your personal library.
                                 </p>
                             </div>
 
                             <div className="flex flex-col gap-3 sm:flex-row">
-                                <Link to="/library" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#e8e4db] bg-white px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-black transition hover:border-[#c97b6b]/40 hover:text-[#c97b6b] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                                <Link to="/library" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#e8e4db] bg-white/70 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#111827] transition hover:border-[#c97b6b]/40 hover:text-[#c96f5c] dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:hover:border-[#ff7a4f]/40 dark:hover:text-[#ff9c7a]">
                                     Explore library
                                     <ArrowUpRight className="h-4 w-4" />
                                 </Link>
@@ -182,21 +183,21 @@ const DiscoverPage = () => {
                         </div>
                     </section>
 
-                    <section className="mb-6 rounded-[28px] border border-[#e8e4db] bg-white p-3 shadow-sm dark:border-white/5 dark:bg-[#161d27]">
+                    <section className="relative z-10 mb-6 rounded-[28px] border border-[#e8e4db] bg-white/75 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-[#e8e4db] bg-[#fcf9f2] px-4 py-3 dark:border-white/5 dark:bg-[#0f1419]">
-                                <Search className="h-5 w-5 shrink-0 text-black/40 dark:text-white/40" />
+                            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070b12] px-4 py-3">
+                                <Search className="h-5 w-5 shrink-0 text-slate-500" />
                                 <input
                                     value={searchQuery}
                                     onChange={(event) => updateSearch(event.target.value)}
                                     placeholder="Search title, author, category..."
-                                    className="w-full border-none bg-transparent p-0 text-sm text-black outline-none placeholder:text-black/30 focus:ring-0 dark:text-white dark:placeholder:text-white/30"
+                                    className="w-full border-none bg-transparent p-0 text-sm text-[#111827] outline-none placeholder:text-slate-400 focus:ring-0 dark:text-white dark:placeholder:text-slate-600"
                                 />
                                 {searchQuery.trim() ? (
                                     <button
                                         type="button"
                                         onClick={() => updateSearch('')}
-                                        className="rounded-full p-1 text-black/35 transition-colors hover:bg-black/5 hover:text-black dark:text-white/35 dark:hover:bg-white/10 dark:hover:text-white"
+                                        className="rounded-full p-1 text-slate-500 transition-colors hover:bg-[#ff7a4f]/8 hover:text-[#111827] dark:hover:bg-white/[0.06] dark:hover:text-white"
                                         aria-label="Clear search"
                                     >
                                         <X className="h-4 w-4" />
@@ -204,7 +205,7 @@ const DiscoverPage = () => {
                                 ) : null}
                             </div>
 
-                            <p className="px-2 text-xs font-bold uppercase tracking-[0.16em] text-black/45 dark:text-white/45">
+                            <p className="px-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
                                 {loading ? 'Loading books' : resultLabel}
                             </p>
                         </div>
@@ -220,7 +221,7 @@ const DiscoverPage = () => {
                                     className={`min-h-10 whitespace-nowrap rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-widest transition-all ${
                                         activeCategory === category
                                             ? 'border-[#c97b6b] bg-[#c97b6b] text-white shadow-lg shadow-[#c97b6b]/20'
-                                            : 'border-[#e8e4db] bg-white text-black/50 hover:text-black dark:border-white/5 dark:bg-[#161d27] dark:text-white/50 dark:hover:text-white'
+                                            : 'border-[#e8e4db] bg-white/70 text-slate-500 hover:text-[#111827] dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:hover:text-white'
                                     }`}
                                 >
                                     {category}
@@ -254,19 +255,19 @@ const DiscoverPage = () => {
                                     initial={{ opacity: 0, y: 18 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.35 }}
-                                    className="mb-10 overflow-hidden rounded-[32px] border border-[#e8e4db] bg-white shadow-[0_24px_80px_rgba(31,41,55,0.08)] dark:border-white/5 dark:bg-[#161d27] dark:shadow-black/20"
+                                    className="mb-10 overflow-hidden rounded-[32px] border border-[#e8e4db] bg-white/75 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/75 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
                                 >
                                     <div className="grid min-h-[360px] lg:grid-cols-[0.72fr_1fr]">
-                                        <div className="relative flex items-center justify-center overflow-hidden bg-[#f2e8dc] p-8 dark:bg-[#111827]">
+                                        <div className="relative flex items-center justify-center overflow-hidden bg-[#0b111b] p-8">
                                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(201,123,107,0.26),transparent_34%)]" />
-                                            <div className="relative aspect-[2/3] h-[260px] overflow-hidden rounded-2xl border border-white/50 bg-[#d3bca8] shadow-2xl dark:border-white/10 dark:bg-[#1c2535] sm:h-[300px]">
+                                            <div className="relative aspect-[2/3] h-[260px] overflow-hidden rounded-2xl border border-white/10 bg-[#1c2535] shadow-2xl sm:h-[300px]">
                                                 <BookCover
                                                     src={featuredBook.coverImage}
                                                     title={featuredBook.title}
                                                     author={featuredBook.author}
                                                     priority
                                                     rounded="rounded-2xl"
-                                                    imageClassName="object-contain bg-[#f2e8dc] dark:bg-[#1c2535]"
+                                                    imageClassName="object-contain bg-[#1c2535]"
                                                 />
                                             </div>
                                         </div>
@@ -277,25 +278,25 @@ const DiscoverPage = () => {
                                                     Featured
                                                 </span>
                                                 {getPrimaryCategory(featuredBook) ? (
-                                                    <span className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-black/55 dark:border-white/10 dark:bg-white/5 dark:text-white/55">
+                                                    <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                                         {getPrimaryCategory(featuredBook)}
                                                     </span>
                                                 ) : null}
                                             </div>
-                                            <h2 className="text-3xl font-semibold leading-tight text-black dark:text-white sm:text-4xl">
+                                            <h2 className="text-3xl font-semibold leading-tight text-[#111827] dark:text-white sm:text-4xl">
                                                 {featuredBook.title || 'Untitled book'}
                                             </h2>
                                             <p className="mt-3 text-sm font-semibold text-[#c97b6b]">
                                                 {featuredBook.author || 'Unknown author'}
                                             </p>
                                             {featuredBook.description ? (
-                                                <p className="mt-5 line-clamp-3 max-w-2xl text-sm leading-6 text-black/60 dark:text-white/60">
+                                                <p className="mt-5 line-clamp-3 max-w-2xl text-sm leading-6 text-slate-400">
                                                     {featuredBook.description}
                                                 </p>
                                             ) : null}
                                             <Link
                                                 to={`/books/${getBookId(featuredBook)}`}
-                                                className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#3b2a1a] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#2f2115] dark:bg-white dark:text-black dark:hover:bg-[#f2e8dc] sm:w-max"
+                                                className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#ff7a4f] px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#e9683f] sm:w-max"
                                             >
                                                 View Details
                                                 <ArrowUpRight className="h-4 w-4" />
@@ -314,18 +315,18 @@ const DiscoverPage = () => {
                                                 {hasSearchOrFilter ? 'Search results' : 'Browse'}
                                             </span>
                                         </div>
-                                        <h2 className="text-2xl font-semibold text-black dark:text-white">
+                                        <h2 className="text-2xl font-semibold text-[#111827] dark:text-white">
                                             {hasSearchOrFilter ? 'Matching Books' : 'All Books'}
                                         </h2>
-                                        <p className="mt-2 text-sm text-black/50 dark:text-white/50">
+                                        <p className="mt-2 text-sm text-slate-500">
                                             {hasSearchOrFilter ? 'Filtered from the current ReadNest catalog.' : 'Explore every available title in the catalog.'}
                                         </p>
                                     </div>
                                     <div className="hidden gap-2 sm:flex">
-                                        <button type="button" onClick={() => scrollRow(-1)} className="grid h-9 w-9 place-items-center rounded-full border border-black/10 text-black/55 transition hover:bg-black/5 dark:border-white/10 dark:text-white/55 dark:hover:bg-white/5" aria-label="Scroll books left">
+                                        <button type="button" onClick={() => scrollRow(-1)} className="grid h-9 w-9 place-items-center rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-400 transition hover:border-[#ff7a4f]/40 hover:text-[#ff9c7a]" aria-label="Scroll books left">
                                             <ChevronLeft className="h-4 w-4" />
                                         </button>
-                                        <button type="button" onClick={() => scrollRow(1)} className="grid h-9 w-9 place-items-center rounded-full border border-black/10 text-black/55 transition hover:bg-black/5 dark:border-white/10 dark:text-white/55 dark:hover:bg-white/5" aria-label="Scroll books right">
+                                        <button type="button" onClick={() => scrollRow(1)} className="grid h-9 w-9 place-items-center rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-400 transition hover:border-[#ff7a4f]/40 hover:text-[#ff9c7a]" aria-label="Scroll books right">
                                             <ChevronRight className="h-4 w-4" />
                                         </button>
                                     </div>
