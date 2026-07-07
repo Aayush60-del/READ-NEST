@@ -18,7 +18,7 @@ const streamToBufferForPdf = async (stream) => {
 
 const { protect } = require("../middleware/authMiddleware");
 const { adminOnly } = require("../middleware/authMiddleware");
-const { createBook, getBooks, getBookById, updateBook, deleteBook, ReadingProgress, ContinueReading, getMyBooks, UserProgress, saveUserProgress, PdfRead, streamBookPdf } = require("../controllers/bookController");
+const { createBook, getBooks, getBookById, updateBook, deleteBook, ReadingProgress, ContinueReading, getDiscoverRecommendations, getMyBooks, UserProgress, saveUserProgress, PdfRead, streamBookPdf } = require("../controllers/bookController");
 const upload = require("../middleware/upload");
 const { BookMarker, AllBookMarker, DelBookMarker, SearchBook, getLibBooks, getReadingStats } = require("../controllers/MarkController")
 
@@ -45,6 +45,8 @@ router.delete("/books/:id", protect, adminOnly, deleteBook);
 router.post("/reading-progress", protect, ReadingProgress);
 
 router.get("/continue-reading", protect, ContinueReading);
+
+router.get("/discover/recommendations", protect, getDiscoverRecommendations);
 
 router.get("/myLibrary", protect, getMyBooks);
 

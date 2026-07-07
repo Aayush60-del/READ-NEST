@@ -96,6 +96,7 @@ export const ENDPOINTS = {
     HIGHLIGHTS: (id) => `/lib/books/${id}/highlights`,
     MY_LIBRARY: '/lib/myLibrary',
     CONTINUE_READING: '/lib/continue-reading',
+    DISCOVER_RECOMMENDATIONS: '/lib/discover/recommendations',
     STATS: '/lib/reading-stats',
     STREAK: '/lib/streak',
     SEARCH: (title) => `/lib/books/search/${title}`,

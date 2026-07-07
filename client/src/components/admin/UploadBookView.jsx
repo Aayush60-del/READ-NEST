@@ -65,15 +65,17 @@ const UploadBookView = () => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: false });
 
-    const normalizedTotalPages = Number(formData.totalPages);
+    const normalizedTotalPages = formData.totalPages.trim()
+      ? Number(formData.totalPages)
+      : null;
 
     if (!formData.title.trim() || !formData.author.trim() || !formData.description.trim() || !formData.category.trim()) {
       setStatus({ loading: false, error: 'Title, author, category, and description are required.', success: false });
       return;
     }
 
-    if (!Number.isFinite(normalizedTotalPages) || normalizedTotalPages < 1) {
-      setStatus({ loading: false, error: 'Total pages must be at least 1.', success: false });
+    if (normalizedTotalPages !== null && (!Number.isFinite(normalizedTotalPages) || normalizedTotalPages < 1)) {
+      setStatus({ loading: false, error: 'Manual total pages must be at least 1.', success: false });
       return;
     }
 
@@ -88,7 +90,9 @@ const UploadBookView = () => {
       data.append('author', formData.author.trim());
       data.append('description', formData.description.trim());
       data.append('category', formData.category.trim());
-      data.append('totalPages', String(normalizedTotalPages));
+      if (normalizedTotalPages !== null) {
+        data.append('totalPages', String(normalizedTotalPages));
+      }
       data.append('coverImage', coverImage);
       data.append('pdfFile', pdfFile);
 
@@ -179,12 +183,14 @@ const UploadBookView = () => {
                   type="number"
                   name="totalPages"
                   min="1"
-                  required
                   value={formData.totalPages}
                   onChange={handleChange}
-                  placeholder="e.g. 218"
+                  placeholder="Auto for PDF"
                   className="w-full bg-white dark:bg-[#0f1419] border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-black dark:text-white focus:outline-none focus:border-[#c97b6b] transition-colors"
                 />
+                <p className="mt-1.5 text-[11px] leading-4 text-black/45 dark:text-white/45">
+                  PDFs are detected automatically. Use this only as a fallback for EPUB or unusual files.
+                </p>
               </div>
             </div>
 
@@ -231,7 +237,7 @@ const UploadBookView = () => {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-black dark:text-white">Book File</h4>
-                  <p className="text-[11px] text-black/50 dark:text-white/50">Upload a PDF or EPUB file under 50MB</p>
+                  <p className="text-[11px] text-black/50 dark:text-white/50">PDF page count is detected on upload. EPUB needs fallback pages.</p>
                 </div>
               </div>
               <input

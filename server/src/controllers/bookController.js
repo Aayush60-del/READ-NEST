@@ -31,6 +31,36 @@ const normalizeTotalPages = (value) => {
     return Number.isFinite(parsed) ? Math.floor(parsed) : NaN;
 };
 
+const detectPdfPageCount = (file) => {
+    if (!file || file.mimetype !== "application/pdf") return null;
+    if (!file.buffer || file.buffer.length === 0) {
+        throw new Error("PDF file is empty or could not be read");
+    }
+
+    const content = file.buffer.toString("latin1");
+    const matches = content.match(/\/Type\s*\/Page\b(?!s)/g);
+    const count = matches?.length || 0;
+
+    if (count < 1) {
+        throw new Error("Could not detect PDF page count. Please upload a valid PDF.");
+    }
+
+    return count;
+};
+
+const resolveTotalPagesForUpload = (file, manualTotalPages) => {
+    const detectedPages = detectPdfPageCount(file);
+    const normalizedManualPages = normalizeTotalPages(manualTotalPages);
+
+    if (detectedPages) return detectedPages;
+
+    if (!normalizedManualPages || normalizedManualPages < 1) {
+        return null;
+    }
+
+    return normalizedManualPages;
+};
+
 const hasS3Config = Boolean(
     process.env.AWS_REGION &&
     process.env.AWS_ACCESS_KEY_ID &&
@@ -46,17 +76,11 @@ const createBook = async (req, res) => {
 
         const { title, author, description, category, totalPages } = req.body;
         const normalizedCategory = normalizeCategory(category);
-        const normalizedTotalPages = normalizeTotalPages(totalPages);
+        const normalizedManualTotalPages = normalizeTotalPages(totalPages);
 
-        if (!title || !author || !description || !normalizedCategory.length || !normalizedTotalPages) {
+        if (!title || !author || !description || !normalizedCategory.length) {
             return res.status(400).json({
                 message: "All fields are required"
-            });
-        }
-
-        if (normalizedTotalPages < 1) {
-            return res.status(400).json({
-                message: "Total pages must be at least 1"
             });
         }
 
@@ -69,6 +93,13 @@ const createBook = async (req, res) => {
 
         const coverImage = req.files.coverImage[0];
         const pdfFile = req.files.pdfFile[0];
+        const resolvedTotalPages = resolveTotalPagesForUpload(pdfFile, normalizedManualTotalPages);
+
+        if (!resolvedTotalPages) {
+            return res.status(400).json({
+                message: "Could not detect page count. Provide total pages manually for non-PDF files."
+            });
+        }
 
         coverResult = await uploadFileToS3(coverImage, "cover");
 
@@ -86,7 +117,7 @@ const createBook = async (req, res) => {
             bookFileUrl: pdfResult.url,
             bookFileKey: pdfResult.key,
             uploadedBy: req.user.id,
-            totalPages: normalizedTotalPages,
+            totalPages: resolvedTotalPages,
 
         });
 
@@ -105,6 +136,11 @@ const createBook = async (req, res) => {
             await deleteFileFromS3(pdfResult.key);
         }
         console.error("Error creating book:", err);
+        if (err.message?.includes("PDF") || err.message?.includes("page count")) {
+            return res.status(400).json({
+                message: err.message
+            });
+        }
         res.status(500).json({
             message: "Server error while creating book",
             error: err.message,
@@ -180,11 +216,13 @@ const updateBook = async (req, res) => {
             }
         }
 
-        if (updatedData.totalPages !== undefined) {
+        if (updatedData.totalPages !== undefined && updatedData.totalPages !== "") {
             updatedData.totalPages = normalizeTotalPages(updatedData.totalPages);
             if (!updatedData.totalPages || updatedData.totalPages < 1) {
                 return res.status(400).json({ message: "Total pages must be at least 1" });
             }
+        } else {
+            delete updatedData.totalPages;
         }
 
         const existingBook = await BookModel.findById(id);
@@ -207,9 +245,21 @@ const updateBook = async (req, res) => {
         // Process new PDF
         if (req.files && req.files.pdfFile) {
             const pdfFile = req.files.pdfFile[0];
+            const detectedOrFallbackTotalPages = resolveTotalPagesForUpload(
+                pdfFile,
+                updatedData.totalPages || existingBook.totalPages
+            );
+
+            if (!detectedOrFallbackTotalPages) {
+                return res.status(400).json({
+                    message: "Could not detect page count. Provide total pages manually for non-PDF files."
+                });
+            }
+
             const pdfResult = await uploadFileToS3(pdfFile, "books");
             updatedData.bookFileUrl = pdfResult.url;
             updatedData.bookFileKey = pdfResult.key;
+            updatedData.totalPages = detectedOrFallbackTotalPages;
 
             if (existingBook.bookFileKey) {
                 deleteFileFromS3(existingBook.bookFileKey).catch(err => console.error("Failed to delete old PDF", err));
@@ -224,6 +274,11 @@ const updateBook = async (req, res) => {
         });
     } catch (err) {
         console.error("Error updating book:", err);
+        if (err.message?.includes("PDF") || err.message?.includes("page count")) {
+            return res.status(400).json({
+                message: err.message
+            });
+        }
         res.status(500).json({
             message: "Server error while updating book",
             error: err.message,
@@ -369,6 +424,181 @@ const ContinueReading = async (req, res) => {
         return res.status(500).json({
             message: "Server error while fetching continue reading",
             error: err.message
+        });
+    }
+};
+
+const toDiscoverBook = (book, extra = {}) => {
+    if (!book) return null;
+
+    const id = book._id || book.id;
+    return {
+        _id: id,
+        bookId: id,
+        title: book.title,
+        author: book.author,
+        description: book.description,
+        category: book.category || [],
+        totalPages: book.totalPages,
+        coverImage: book.coverImage,
+        createdAt: book.createdAt,
+        updatedAt: book.updatedAt,
+        ...extra,
+    };
+};
+
+const getDiscoverRecommendations = async (req, res) => {
+    try {
+        const { id: userId } = req.user;
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        const progressData = await ReadingProgressModel
+            .find({ userId })
+            .sort({ updatedAt: -1 })
+            .populate("bookId", "title author description category coverImage totalPages createdAt updatedAt")
+            .lean();
+
+        const validProgress = progressData.filter((entry) => entry.bookId);
+        const startedBookIds = validProgress.map((entry) => entry.bookId._id);
+        const completedBookIds = validProgress
+            .filter((entry) => entry.isCompleted)
+            .map((entry) => entry.bookId._id);
+
+        const continueReading = validProgress
+            .filter((entry) => !entry.isCompleted && (entry.currentPage || 0) > 0)
+            .slice(0, 10)
+            .map((entry) => toDiscoverBook(entry.bookId, {
+                currentPage: entry.currentPage,
+                percentageCompleted: entry.percentageCompleted,
+                isCompleted: entry.isCompleted,
+                progressUpdatedAt: entry.updatedAt,
+            }));
+
+        const unfinishedBooks = validProgress
+            .filter((entry) => !entry.isCompleted)
+            .slice(0, 12)
+            .map((entry) => toDiscoverBook(entry.bookId, {
+                currentPage: entry.currentPage,
+                percentageCompleted: entry.percentageCompleted,
+                isCompleted: entry.isCompleted,
+                progressUpdatedAt: entry.updatedAt,
+            }));
+
+        const categoryCounts = new Map();
+        validProgress.forEach((entry) => {
+            (entry.bookId.category || []).forEach((category) => {
+                const key = String(category || "").trim();
+                if (key) categoryCounts.set(key, (categoryCounts.get(key) || 0) + 1);
+            });
+        });
+        const preferredCategories = Array.from(categoryCounts.entries())
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .map(([category]) => category)
+            .slice(0, 5);
+
+        const similarGenreBooks = preferredCategories.length
+            ? await BookModel.find({
+                category: { $in: preferredCategories },
+                _id: { $nin: startedBookIds },
+            })
+                .select("title author description category coverImage totalPages createdAt updatedAt")
+                .sort({ createdAt: -1 })
+                .limit(12)
+                .lean()
+            : [];
+
+        const shortReadBooks = await BookModel.find({
+            totalPages: { $lte: 180 },
+            _id: { $nin: completedBookIds },
+        })
+            .select("title author description category coverImage totalPages createdAt updatedAt")
+            .sort({ totalPages: 1, createdAt: -1 })
+            .limit(12)
+            .lean();
+
+        const trendingProgress = await ReadingProgressModel.aggregate([
+            {
+                $group: {
+                    _id: "$bookId",
+                    readerCount: { $sum: 1 },
+                    avgProgress: { $avg: "$percentageCompleted" },
+                    lastOpenedAt: { $max: "$updatedAt" },
+                }
+            },
+            { $sort: { readerCount: -1, avgProgress: -1, lastOpenedAt: -1 } },
+            { $limit: 12 }
+        ]);
+
+        const trendingIds = trendingProgress.map((item) => item._id);
+        const trendingBooks = trendingIds.length
+            ? await BookModel.find({ _id: { $in: trendingIds } })
+                .select("title author description category coverImage totalPages createdAt updatedAt")
+                .lean()
+            : [];
+        const trendingBookMap = new Map(trendingBooks.map((book) => [String(book._id), book]));
+        const trendingInLibrary = trendingProgress
+            .map((item) => {
+                const book = trendingBookMap.get(String(item._id));
+                return toDiscoverBook(book, {
+                    readerCount: item.readerCount,
+                    averageProgress: Math.round(item.avgProgress || 0),
+                    lastOpenedAt: item.lastOpenedAt,
+                });
+            })
+            .filter(Boolean);
+
+        const fallbackTrending = trendingInLibrary.length
+            ? []
+            : await BookModel.find()
+                .select("title author description category coverImage totalPages createdAt updatedAt")
+                .sort({ createdAt: -1 })
+                .limit(12)
+                .lean();
+
+        const sessionSummary = await ReadingSessionModel.aggregate([
+            { $match: { userId: userObjectId } },
+            {
+                $group: {
+                    _id: "$bookId",
+                    sessions: { $sum: 1 },
+                    activeSeconds: { $sum: { $ifNull: ["$activeSeconds", 0] } },
+                    lastSessionAt: { $max: "$endedAt" },
+                }
+            }
+        ]);
+
+        return res.status(200).json({
+            message: "Discover recommendations fetched successfully",
+            data: {
+                continueReading,
+                similarGenres: similarGenreBooks.map((book) => toDiscoverBook(book, {
+                    recommendationReason: preferredCategories.length
+                        ? `Because you read ${preferredCategories.slice(0, 2).join(", ")}`
+                        : "Based on your library",
+                })),
+                shortReads: shortReadBooks.map((book) => toDiscoverBook(book, {
+                    recommendationReason: `${book.totalPages} pages`,
+                })),
+                unfinishedBooks,
+                trendingInLibrary: trendingInLibrary.length
+                    ? trendingInLibrary
+                    : fallbackTrending.map((book) => toDiscoverBook(book, {
+                        readerCount: 0,
+                        averageProgress: 0,
+                    })),
+                meta: {
+                    preferredCategories,
+                    startedBooks: startedBookIds.length,
+                    readingSessions: sessionSummary.reduce((sum, item) => sum + item.sessions, 0),
+                    activeSeconds: sessionSummary.reduce((sum, item) => sum + item.activeSeconds, 0),
+                }
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching discover recommendations:", err);
+        return res.status(500).json({
+            message: "Server error while fetching discover recommendations",
+            error: err.message,
         });
     }
 };
@@ -869,6 +1099,7 @@ module.exports = {
     deleteBook,
     ReadingProgress,
     ContinueReading,
+    getDiscoverRecommendations,
     getMyBooks,
     UserProgress,
     saveUserProgress,

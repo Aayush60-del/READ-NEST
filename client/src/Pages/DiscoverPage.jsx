@@ -6,11 +6,13 @@ import {
     BookOpen,
     ChevronLeft,
     ChevronRight,
+    Clock3,
     Compass,
     Library,
     RefreshCw,
     Search,
     Sparkles,
+    TrendingUp,
     X,
 } from 'lucide-react';
 import { Sidebar } from '../components/layout/Sidebar';
@@ -23,6 +25,8 @@ const unwrapBooks = (response) => {
     const payload = response?.data?.data ?? response?.data ?? response ?? [];
     return Array.isArray(payload) ? payload : [];
 };
+
+const unwrapRecommendations = (response) => response?.data?.data ?? response?.data ?? response ?? {};
 
 const getBookId = (book) => book?._id || book?.id;
 
@@ -69,9 +73,59 @@ const LoadingShelves = () => (
     </>
 );
 
+const RecommendationShelf = ({ title, subtitle, icon: Icon, books, rowId, showProgress = false }) => {
+    const rowRef = useRef(null);
+
+    if (!books?.length) return null;
+
+    const scrollRow = (direction) => {
+        rowRef.current?.scrollBy({ left: direction * 300, behavior: 'smooth' });
+    };
+
+    return (
+        <section className="mb-10">
+            <div className="mb-5 flex items-end justify-between gap-4">
+                <div>
+                    <div className="mb-2 flex items-center gap-2 text-[#c97b6b]">
+                        <Icon className="h-4 w-4" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.22em]">
+                            Recommended
+                        </span>
+                    </div>
+                    <h2 className="text-2xl font-semibold text-[#111827] dark:text-white">
+                        {title}
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+                </div>
+                <div className="hidden gap-2 sm:flex">
+                    <button type="button" onClick={() => scrollRow(-1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e8e4db] bg-white/70 text-slate-500 transition hover:border-[#ff7a4f]/40 hover:text-[#c96f5c] dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-400 dark:hover:text-[#ff9c7a]" aria-label={`Scroll ${title} left`}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button type="button" onClick={() => scrollRow(1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e8e4db] bg-white/70 text-slate-500 transition hover:border-[#ff7a4f]/40 hover:text-[#c96f5c] dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-400 dark:hover:text-[#ff9c7a]" aria-label={`Scroll ${title} right`}>
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                </div>
+            </div>
+
+            <div ref={rowRef} id={rowId} className="scrollbar-hide flex gap-5 overflow-x-auto pb-6 scroll-smooth md:gap-6">
+                {books.map((book) => (
+                    <BookCard
+                        key={`${rowId}-${getBookId(book)}`}
+                        book={book}
+                        to={`/books/${getBookId(book)}`}
+                        variant="compact"
+                        showProgress={showProgress || book.percentageCompleted !== undefined}
+                    />
+                ))}
+            </div>
+        </section>
+    );
+};
+
 const DiscoverPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [books, setBooks] = useState([]);
+    const [recommendations, setRecommendations] = useState({});
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
     const [activeCategory, setActiveCategory] = useState('All');
@@ -80,11 +134,28 @@ const DiscoverPage = () => {
     const fetchBooks = async () => {
         setLoading(true);
         try {
-            const res = await api.get(ENDPOINTS.BOOKS.LIST);
-            setBooks(unwrapBooks(res));
+            const [booksResult, recommendationsResult] = await Promise.allSettled([
+                api.get(ENDPOINTS.BOOKS.LIST),
+                api.get(ENDPOINTS.BOOKS.DISCOVER_RECOMMENDATIONS),
+            ]);
+
+            if (booksResult.status === 'fulfilled') {
+                setBooks(unwrapBooks(booksResult.value));
+            } else {
+                console.error("Failed to load discover books:", booksResult.reason);
+                setBooks([]);
+            }
+
+            if (recommendationsResult.status === 'fulfilled') {
+                setRecommendations(unwrapRecommendations(recommendationsResult.value));
+            } else {
+                console.error("Failed to load discover recommendations:", recommendationsResult.reason);
+                setRecommendations({});
+            }
         } catch (error) {
             console.error("Failed to load discover books:", error);
             setBooks([]);
+            setRecommendations({});
         } finally {
             setLoading(false);
         }
@@ -140,6 +211,47 @@ const DiscoverPage = () => {
     const featuredBook = visibleBooks[0] || null;
     const shelfBooks = visibleBooks.slice(featuredBook ? 1 : 0);
     const hasSearchOrFilter = Boolean(searchQuery.trim()) || activeCategory !== 'All';
+    const recommendationShelves = useMemo(() => ([
+        {
+            key: 'continue-reading',
+            title: 'Continue Reading',
+            subtitle: 'Books you started and have not finished yet.',
+            icon: BookOpen,
+            books: recommendations.continueReading || [],
+            showProgress: true,
+        },
+        {
+            key: 'similar-genres',
+            title: 'Similar Genres',
+            subtitle: 'Fresh books from categories you already spend time with.',
+            icon: Sparkles,
+            books: recommendations.similarGenres || [],
+        },
+        {
+            key: 'short-reads',
+            title: 'Short Reads',
+            subtitle: 'Lower page-count books for quick reading sessions.',
+            icon: Clock3,
+            books: recommendations.shortReads || [],
+        },
+        {
+            key: 'unfinished-books',
+            title: 'Unfinished Books',
+            subtitle: 'Started books sorted by your latest reading activity.',
+            icon: RefreshCw,
+            books: recommendations.unfinishedBooks || [],
+            showProgress: true,
+        },
+        {
+            key: 'trending-library',
+            title: 'Trending in Library',
+            subtitle: 'Books with the most reader activity across ReadNest.',
+            icon: TrendingUp,
+            books: recommendations.trendingInLibrary || [],
+            showProgress: true,
+        },
+    ]), [recommendations]);
+    const showRecommendations = !hasSearchOrFilter && recommendationShelves.some((shelf) => shelf.books.length);
     const resultLabel = searchQuery.trim()
         ? `Showing ${visibleBooks.length} ${visibleBooks.length === 1 ? 'result' : 'results'} for ${searchQuery.trim()}`
         : activeCategory !== 'All'
@@ -250,7 +362,23 @@ const DiscoverPage = () => {
                         />
                     ) : (
                         <>
-                            {featuredBook ? (
+                            {showRecommendations ? (
+                                <div className="relative z-10">
+                                    {recommendationShelves.map((shelf) => (
+                                        <RecommendationShelf
+                                            key={shelf.key}
+                                            rowId={shelf.key}
+                                            title={shelf.title}
+                                            subtitle={shelf.subtitle}
+                                            icon={shelf.icon}
+                                            books={shelf.books}
+                                            showProgress={shelf.showProgress}
+                                        />
+                                    ))}
+                                </div>
+                            ) : null}
+
+                            {!showRecommendations && featuredBook ? (
                                 <motion.section
                                     initial={{ opacity: 0, y: 18 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -316,7 +444,7 @@ const DiscoverPage = () => {
                                             </span>
                                         </div>
                                         <h2 className="text-2xl font-semibold text-[#111827] dark:text-white">
-                                            {hasSearchOrFilter ? 'Matching Books' : 'All Books'}
+                                            {hasSearchOrFilter ? 'Matching Books' : showRecommendations ? 'Full Catalog' : 'All Books'}
                                         </h2>
                                         <p className="mt-2 text-sm text-slate-500">
                                             {hasSearchOrFilter ? 'Filtered from the current ReadNest catalog.' : 'Explore every available title in the catalog.'}
@@ -333,7 +461,7 @@ const DiscoverPage = () => {
                                 </div>
 
                                 <div ref={rowRef} className="scrollbar-hide flex gap-5 overflow-x-auto pb-6 scroll-smooth md:gap-6">
-                                    {(shelfBooks.length ? shelfBooks : visibleBooks).map((book) => (
+                                    {((showRecommendations ? visibleBooks : shelfBooks).length ? (showRecommendations ? visibleBooks : shelfBooks) : visibleBooks).map((book) => (
                                         <BookCard
                                             key={getBookId(book)}
                                             book={book}
