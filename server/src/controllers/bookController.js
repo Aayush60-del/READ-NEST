@@ -1,5 +1,6 @@
 const BookModel = require("../models/Book");
 const ReadingProgressModel = require("../models/ReadingProgress");
+const ReadingSessionModel = require("../models/ReadingSession");
 const { uploadFileToS3, deleteFileFromS3, generateSignedUrl } = require("../services/s3Service");
 const StreakModel = require("../models/ReadStreak");
 const notificationService = require("../services/notificationService");
@@ -471,14 +472,67 @@ const UserProgress = async (req, res) => {
 
 const MIN_SECONDS_TO_COUNT_READING_DAY = 5 * 60;
 
+const getStartOfDay = (date = new Date()) => {
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+    return day;
+};
+
+const updateReadingStreakForQualifiedDay = async (userId, qualifiedDate) => {
+    const today = getStartOfDay(qualifiedDate);
+    let streak = await StreakModel.findOne({ userId });
+
+    if (!streak) {
+        streak = await StreakModel.create({
+            userId,
+            streak: 1,
+            lastReadDate: today,
+            readDates: [today]
+        });
+        return { streak, updated: true };
+    }
+
+    const alreadyHasToday = streak.readDates.some(d => {
+        const dt = getStartOfDay(d);
+        return dt.getTime() === today.getTime();
+    });
+
+    const lastRead = streak.lastReadDate ? getStartOfDay(streak.lastReadDate) : null;
+    if (alreadyHasToday || (lastRead && lastRead.getTime() === today.getTime())) {
+        return { streak, updated: false };
+    }
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    streak.streak = lastRead && lastRead.getTime() === yesterday.getTime()
+        ? streak.streak + 1
+        : 1;
+    streak.lastReadDate = today;
+    streak.readDates.push(today);
+
+    const sixtyDaysAgo = new Date(today);
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    streak.readDates = streak.readDates.filter(d => new Date(d) >= sixtyDaysAgo);
+
+    await streak.save();
+    return { streak, updated: true };
+};
+
 const saveUserProgress = async (req, res) => {
     try {
         const { id: userId } = req.user;
         const bookId = req.params.id;
-        const { currentPage, totalPages, sessionPagesRead = 0, sessionReadingSeconds = 0 } = req.body;
+        const {
+            currentPage,
+            totalPages,
+            sessionPagesRead = 0,
+            sessionReadingSeconds = 0,
+            readingSessionId,
+            pagesVisited = []
+        } = req.body;
         const normalizedSessionPagesRead = Math.max(0, Number(sessionPagesRead) || 0);
         const normalizedSessionReadingSeconds = Math.max(0, Number(sessionReadingSeconds) || 0);
-        const shouldCountReadingDay = normalizedSessionReadingSeconds >= MIN_SECONDS_TO_COUNT_READING_DAY;
 
         if (!isValidObjectId(bookId)) {
             return res.status(400).json({
@@ -519,6 +573,41 @@ const saveUserProgress = async (req, res) => {
         const isCompleted =
             normalizedPage >= safeTotalPages;
 
+        const now = new Date();
+        const sessionDate = getStartOfDay(now);
+        const clientSessionId = String(readingSessionId || `${bookId}:${sessionDate.toISOString()}`);
+        const normalizedPagesVisited = Array.from(
+            new Set(
+                (Array.isArray(pagesVisited) ? pagesVisited : [])
+                    .map((page) => Number(page))
+                    .filter((page) => Number.isFinite(page) && page >= 1 && page <= safeTotalPages)
+                    .map((page) => Math.floor(page))
+            )
+        );
+
+        if (normalizedPage >= 1 && !normalizedPagesVisited.includes(normalizedPage)) {
+            normalizedPagesVisited.push(normalizedPage);
+        }
+
+        const existingSession = await ReadingSessionModel.findOne({
+            userId,
+            bookId,
+            clientSessionId,
+        });
+
+        const previousQualifiedForStreak = Boolean(existingSession?.qualifiedForStreak);
+        const nextActiveSeconds = Math.max(
+            Number(existingSession?.activeSeconds) || 0,
+            normalizedSessionReadingSeconds
+        );
+        const nextPagesVisited = Array.from(
+            new Set([
+                ...(existingSession?.pagesVisited || []),
+                ...normalizedPagesVisited,
+            ])
+        ).sort((a, b) => a - b);
+        const shouldCountReadingDay = nextActiveSeconds >= MIN_SECONDS_TO_COUNT_READING_DAY;
+
         await ReadingProgressModel.findOneAndUpdate(
             {
                 userId,
@@ -531,6 +620,26 @@ const saveUserProgress = async (req, res) => {
                     isCompleted,
                     totalPages: safeTotalPages
                 }
+            },
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+        );
+
+        const readingSession = await ReadingSessionModel.findOneAndUpdate(
+            { userId, bookId, clientSessionId },
+            {
+                $setOnInsert: {
+                    userId,
+                    bookId,
+                    clientSessionId,
+                    sessionDate,
+                    startedAt: now,
+                },
+                $set: {
+                    endedAt: now,
+                    activeSeconds: nextActiveSeconds,
+                    pagesVisited: nextPagesVisited,
+                    qualifiedForStreak: shouldCountReadingDay,
+                },
             },
             { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
@@ -557,46 +666,27 @@ const saveUserProgress = async (req, res) => {
             });
         }
 
-        // Only qualified sessions count as a reading day; regular page progress is saved above.
-        if (shouldCountReadingDay) {
+        // Only qualified server-side reading sessions count as a reading day.
+        if (shouldCountReadingDay && !previousQualifiedForStreak) {
             try {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                let streak = await StreakModel.findOne({ userId });
-                if (!streak) {
-                    await StreakModel.create({ userId, streak: 1, lastReadDate: today, readDates: [today] });
-                } else {
-                    const lastRead = streak.lastReadDate ? new Date(streak.lastReadDate) : null;
-                    if (lastRead) lastRead.setHours(0, 0, 0, 0);
-                    if (!lastRead || lastRead.getTime() !== today.getTime()) {
-                        const yesterday = new Date(today);
-                        yesterday.setDate(yesterday.getDate() - 1);
-                        const newStreak = lastRead && lastRead.getTime() === yesterday.getTime() ? streak.streak + 1 : 1;
-                        const alreadyHasToday = streak.readDates.some(d => { const dt = new Date(d); dt.setHours(0,0,0,0); return dt.getTime() === today.getTime(); });
-                        streak.streak = newStreak;
-                        streak.lastReadDate = today;
-                        if (!alreadyHasToday) streak.readDates.push(today);
-                        await streak.save();
+                const { streak, updated } = await updateReadingStreakForQualifiedDay(userId, sessionDate);
 
-                        // Check milestone
-                        const milestones = [1, 3, 7, 14, 30, 60, 100];
-                        if (milestones.includes(newStreak)) {
-                            let msg = "";
-                            if (newStreak === 1) msg = "You've taken the first step. Great job!";
-                            else if (newStreak === 3) msg = "Three days in a row! You're building a habit.";
-                            else if (newStreak === 7) msg = "Amazing consistency. Keep reading every day.";
-                            else if (newStreak >= 30) msg = "You are building a powerful reading habit.";
-                            else msg = `You've read for ${newStreak} consecutive days!`;
+                const milestones = [1, 3, 7, 14, 30, 60, 100];
+                if (updated && milestones.includes(streak.streak)) {
+                    let msg = "";
+                    if (streak.streak === 1) msg = "You've taken the first step. Great job!";
+                    else if (streak.streak === 3) msg = "Three days in a row! You're building a habit.";
+                    else if (streak.streak === 7) msg = "Amazing consistency. Keep reading every day.";
+                    else if (streak.streak >= 30) msg = "You are building a powerful reading habit.";
+                    else msg = `You've read for ${streak.streak} consecutive days!`;
 
-                            await notificationService.sendNotification({
-                                userId,
-                                title: `${newStreak} Day Streak Unlocked`,
-                                message: msg,
-                                type: "streak_achievement",
-                                url: "/stats"
-                            });
-                        }
-                    }
+                    await notificationService.sendNotification({
+                        userId,
+                        title: `${streak.streak} Day Streak Unlocked`,
+                        message: msg,
+                        type: "streak_achievement",
+                        url: "/stats"
+                    });
                 }
             } catch (streakErr) {
                 // Non-blocking - streak failure shouldn't break progress save
@@ -610,6 +700,7 @@ const saveUserProgress = async (req, res) => {
             readingDayCounted: shouldCountReadingDay,
             sessionPagesRead: normalizedSessionPagesRead,
             sessionReadingSeconds: normalizedSessionReadingSeconds,
+            readingSessionId: readingSession._id,
             data: {
                 currentPage: normalizedPage,
                 percentageCompleted,
@@ -617,7 +708,10 @@ const saveUserProgress = async (req, res) => {
                 progressSaved: true,
                 readingDayCounted: shouldCountReadingDay,
                 sessionPagesRead: normalizedSessionPagesRead,
-                sessionReadingSeconds: normalizedSessionReadingSeconds
+                sessionReadingSeconds: normalizedSessionReadingSeconds,
+                sessionActiveSeconds: readingSession.activeSeconds,
+                sessionPagesVisited: readingSession.pagesVisited.length,
+                qualifiedForStreak: readingSession.qualifiedForStreak
             }
         });
 

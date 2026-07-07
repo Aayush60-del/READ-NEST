@@ -102,8 +102,10 @@ const ReadingStatsPage = () => {
     const pagesRead = stats?.totalPagesRead || 0;
     const currentlyReading = stats?.CurrentlyReading || 0;
     const completionRate = stats?.CompletionRate || 0;
+    const readingMinutes = stats?.totalReadingMinutes || 0;
+    const totalSessions = stats?.totalSessions || 0;
     const streak = streakData?.streak || 0;
-    const readDates = streakData?.readDates || [];
+    const readDates = stats?.readingDays?.length ? stats.readingDays : (streakData?.readDates || []);
     const readSet = getReadDateSet(readDates);
     const heatmapWeeks = buildReadingHeatmap(readDates, 5);
     const heatmap = heatmapWeeks.flat().slice(-30);
@@ -158,7 +160,7 @@ const ReadingStatsPage = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                         <StatCard icon={BookOpen} label="Books Completed" value={loading ? '-' : booksRead} helper="Finished books in your library." />
                         <StatCard icon={BarChart} label="Pages Read" value={loading ? '-' : pagesRead} helper="Total saved reading progress." />
-                        <StatCard icon={Clock} label="Currently Reading" value={loading ? '-' : currentlyReading} helper="Books still in progress." />
+                        <StatCard icon={Clock} label="Reading Minutes" value={loading ? '-' : readingMinutes} helper={`${totalSessions} tracked sessions.`} />
                         <StatCard icon={Zap} label="Completion Rate" value={loading ? '-' : `${completionRate}%`} helper="Based on completed books." accent />
                     </div>
 
@@ -173,7 +175,7 @@ const ReadingStatsPage = () => {
                         <div className="bg-white/75 border border-[#e8e4db] rounded-[28px] p-10 flex flex-col items-center justify-center shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl min-h-[340px] dark:bg-[#0f1726]/75 dark:border-white/[0.08] dark:shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                             <Book className="w-12 h-12 text-slate-600 mb-4" />
                             <h2 className="text-2xl font-semibold text-[#111827] dark:text-white mb-2">No reading data yet</h2>
-                            <p className="text-slate-400 text-center mb-6 max-w-md">Open a book and read at least 5 pages to start building your heatmap and streak.</p>
+                            <p className="text-slate-400 text-center mb-6 max-w-md">Open a book and read for at least 5 active minutes to start building your heatmap and streak.</p>
                             <Link to="/discover" className="px-6 py-3 rounded-xl bg-[#ff7a4f] text-white text-sm font-bold tracking-widest uppercase hover:bg-[#e9683f] transition-colors">
                                 Discover Books
                             </Link>
@@ -226,8 +228,8 @@ const ReadingStatsPage = () => {
                                 {readDates.length === 0 ? (
                                     <div className="rounded-[24px] border border-dashed border-white/[0.12] bg-white/[0.03] p-8 text-center">
                                         <CalendarDays className="mx-auto mb-3 h-8 w-8 text-[#c97b6b]" />
-                                        <p className="text-sm font-semibold text-[#111827] dark:text-white">Read at least 5 pages to light up your heatmap.</p>
-                                        <p className="mt-2 text-xs leading-5 text-slate-500">Your last 30 days of reading activity will appear here once progress is logged.</p>
+                                        <p className="text-sm font-semibold text-[#111827] dark:text-white">Read at least 5 active minutes to light up your heatmap.</p>
+                                        <p className="mt-2 text-xs leading-5 text-slate-500">Your last 30 days of qualified reading sessions will appear here once progress is logged.</p>
                                     </div>
                                 ) : (
                                 <div className="overflow-x-auto pb-2 scrollbar-hide">

@@ -8,7 +8,7 @@ const AddHighlights = async (req, res) => {
     try {
         const userId = req.user.id;
         const bookId = req.params.id;
-        const { selectedText, color } = req.body;
+        const { selectedText, color, pageNumber } = req.body;
 
         const progress = await ReadingProgressModel.findOne({
             userId,
@@ -24,7 +24,7 @@ const AddHighlights = async (req, res) => {
         const newHighlight = await HighlightsModel.create({
             userId,
             bookId,
-            pageNumber: progress.currentPage,
+            pageNumber: Math.max(1, Number(pageNumber) || progress.currentPage || 1),
             SelectedText: selectedText,
             color
         });

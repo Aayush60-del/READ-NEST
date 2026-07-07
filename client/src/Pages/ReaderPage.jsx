@@ -8,7 +8,8 @@ import {
     ArrowLeft, BookOpen, Bookmark, Maximize, Minimize, X,
     ZoomIn, ZoomOut, Save, ChevronLeft, ChevronRight,
     Sun, Moon, Coffee, Eye, Settings2, Check, Clock,
-    BarChart2, RefreshCw, AlertTriangle, FileX
+    BarChart2, RefreshCw, AlertTriangle, FileX, ListTree,
+    StickyNote, Highlighter, Trash2, Download, Search, Plus
 } from 'lucide-react';
 import api, { API_BASE_URL, ENDPOINTS, getStoredSession } from '@/lib/api';
 import StreakCelebration from '@/components/streak/StreakCelebration';
@@ -62,6 +63,54 @@ const AUTO_SAVE_INTERVAL_MS = 20000;
 const STREAK_MILESTONES = [7, 14, 30, 50, 100, 365];
 
 const unwrapApiPayload = (response) => response?.data?.data ?? response?.data ?? response ?? {};
+
+const formatReadingTime = (seconds = 0) => {
+    const safeSeconds = Math.max(0, Number(seconds) || 0);
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+
+    if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours}h ${mins}m`;
+    }
+
+    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+};
+
+const flattenPdfOutline = async (items = [], pdfDoc, depth = 0) => {
+    const flattened = [];
+
+    for (const item of items) {
+        let pageNumber = null;
+
+        try {
+            let destination = item.dest;
+            if (typeof destination === 'string' && pdfDoc?.getDestination) {
+                destination = await pdfDoc.getDestination(destination);
+            }
+
+            const pageRef = Array.isArray(destination) ? destination[0] : null;
+            if (pageRef && pdfDoc?.getPageIndex) {
+                pageNumber = (await pdfDoc.getPageIndex(pageRef)) + 1;
+            }
+        } catch (error) {
+            console.warn('[ReaderPage] Failed to resolve PDF outline destination:', error);
+        }
+
+        flattened.push({
+            title: item.title || 'Untitled section',
+            pageNumber,
+            depth,
+        });
+
+        if (item.items?.length) {
+            flattened.push(...await flattenPdfOutline(item.items, pdfDoc, depth + 1));
+        }
+    }
+
+    return flattened;
+};
 
 const getWeeklyProgress = (streakPayload = {}) => {
     const days = streakPayload.weeklyProgress || streakPayload.last7Days || streakPayload.week || [];
@@ -145,6 +194,11 @@ const ReaderPage = () => {
     const autoSaveTimerRef = useRef(null);
     const autoSaveDebounceRef = useRef(null);
     const activeReadingSecondsRef = useRef(0);
+    const readingSessionIdRef = useRef(
+        typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     const sessionReadPagesRef = useRef(new Set());
     const touchStartRef = useRef(null);
     const streakCelebrationAttemptedRef = useRef(false);
@@ -181,18 +235,26 @@ const ReaderPage = () => {
     // -- Single source of truth for page -------------------------------------
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [savedResumePage, setSavedResumePage] = useState(null);
+    const [pdfOutline, setPdfOutline] = useState([]);
 
     // -- Reader UI -----------------------------------------------------------
     const [zoom, setZoom] = useState(1.0);
     const [mode, setMode] = useState('dark');
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [activePanel, setActivePanel] = useState(null); // 'settings' | 'stats' | null
+    const [activePanel, setActivePanel] = useState(null); // 'navigation' | 'settings' | 'stats' | null
     const [toast, setToast] = useState(null);
     const [saving, setSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState('saved');
     const [bookmarks, setBookmarks] = useState([]);
     const [bookmarkRecords, setBookmarkRecords] = useState([]);
     const [isCurrentPageBookmarked, setIsCurrentPageBookmarked] = useState(false);
+    const [notes, setNotes] = useState([]);
+    const [highlights, setHighlights] = useState([]);
+    const [noteDraft, setNoteDraft] = useState('');
+    const [noteSearch, setNoteSearch] = useState('');
+    const [editingNoteId, setEditingNoteId] = useState(null);
+    const [selectionToolbar, setSelectionToolbar] = useState(null);
 
     // -- Reading stats --------------------------------------------------------
     const [pagesRead, setPagesRead] = useState(new Set());
@@ -205,6 +267,31 @@ const ReaderPage = () => {
     const totalPagesRef = useRef(totalPages);
     currentPageRef.current = currentPage;
     totalPagesRef.current = totalPages;
+
+    const filteredNotes = useMemo(() => {
+        const query = noteSearch.trim().toLowerCase();
+        return [...notes]
+            .filter((note) => {
+                if (!query) return true;
+                return `${note.note || ''} page ${note.pageNumber}`.toLowerCase().includes(query);
+            })
+            .sort((a, b) => (a.pageNumber || 0) - (b.pageNumber || 0));
+    }, [notes, noteSearch]);
+
+    const filteredHighlights = useMemo(() => {
+        const query = noteSearch.trim().toLowerCase();
+        return [...highlights]
+            .filter((highlight) => {
+                if (!query) return true;
+                return `${highlight.SelectedText || highlight.selectedText || ''} page ${highlight.pageNumber}`.toLowerCase().includes(query);
+            })
+            .sort((a, b) => (a.pageNumber || 0) - (b.pageNumber || 0));
+    }, [highlights, noteSearch]);
+
+    const currentPageNotes = useMemo(
+        () => notes.filter((note) => Number(note.pageNumber) === currentPage),
+        [notes, currentPage]
+    );
 
     const pdfFile = useMemo(() => {
         if (!pdfUrl) return null;
@@ -234,7 +321,13 @@ const ReaderPage = () => {
         setPdfUrl(null);
         setPdfData(null);
         setTotalPages(0);
+        setPdfOutline([]);
+        setSavedResumePage(null);
         initialProgressReconciledRef.current = false;
+        readingSessionIdRef.current =
+            typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         activeReadingSecondsRef.current = 0;
         setReadingSeconds(0);
 
@@ -250,6 +343,7 @@ const ReaderPage = () => {
 
             const savedPage = progressRes?.data?.currentPage;
             if (savedPage && savedPage > 1) {
+                setSavedResumePage(savedPage);
                 setCurrentPage(savedPage);
             }
             const savedTotalPages = Number(progressRes?.data?.totalPages) || 0;
@@ -266,6 +360,13 @@ const ReaderPage = () => {
             const records = bookmarkRes?.data || [];
             setBookmarkRecords(records);
             setBookmarks(records.map((item) => item.pageNumber));
+
+            const [notesRes, highlightsRes] = await Promise.all([
+                api.get(ENDPOINTS.BOOKS.NOTES(id)).catch(() => null),
+                api.get(ENDPOINTS.BOOKS.HIGHLIGHTS(id)).catch(() => null),
+            ]);
+            setNotes(notesRes?.notesData || notesRes?.data?.notesData || []);
+            setHighlights(highlightsRes?.highlights || highlightsRes?.data?.highlights || []);
 
             // 4. Use protected backend PDF stream directly.
             // react-pdf receives the URL with Authorization headers via pdfFile.
@@ -333,6 +434,7 @@ const ReaderPage = () => {
             );
             const sessionPagesRead = sessionReadPagesRef.current.size;
             const sessionReadingSeconds = activeReadingSecondsRef.current;
+            const pagesVisited = Array.from(sessionReadPagesRef.current).sort((a, b) => a - b);
             const payload = {
                 currentPage: pageNumber,
                 percentageCompleted,
@@ -340,6 +442,8 @@ const ReaderPage = () => {
                 totalPages: safeTotalPages,
                 sessionPagesRead,
                 sessionReadingSeconds,
+                readingSessionId: readingSessionIdRef.current,
+                pagesVisited,
             };
 
             if (options.keepalive) {
@@ -586,10 +690,173 @@ const ReaderPage = () => {
     };
 
     // -- PDF callbacks ---------------------------------------------------------
-    const onDocumentLoadSuccess = ({ numPages }) => {
+    const onDocumentLoadSuccess = async (pdfDoc) => {
+        const numPages = pdfDoc?.numPages || 0;
         setTotalPages(numPages);
         setPdfError(false);
         setCurrentPage((page) => Math.min(Math.max(page, 1), numPages || 1));
+
+        try {
+            const outline = await pdfDoc.getOutline?.();
+            setPdfOutline(outline?.length ? await flattenPdfOutline(outline, pdfDoc) : []);
+        } catch (error) {
+            console.warn('[ReaderPage] PDF outline unavailable:', error);
+            setPdfOutline([]);
+        }
+    };
+
+    const saveNote = async ({ text = noteDraft, pageNumber = currentPage, editId = editingNoteId } = {}) => {
+        const trimmed = text.trim();
+        if (!trimmed) {
+            showToast('Write a note first', 'error');
+            return;
+        }
+
+        try {
+            if (editId) {
+                const res = await api.put(`/lib/books/notes/${editId}`, {
+                    note: trimmed,
+                    pageNumber,
+                });
+                const updated = res?.updatedNote || res?.data?.updatedNote;
+                if (updated) {
+                    setNotes(prev => prev.map(note => note._id === editId ? updated : note));
+                }
+                showToast('Note updated');
+            } else {
+                const res = await api.post(ENDPOINTS.BOOKS.NOTES(id), {
+                    note: trimmed,
+                    pageNumber,
+                });
+                const created = res?.data || res?.note;
+                if (created) setNotes(prev => [created, ...prev]);
+                showToast('Note saved');
+            }
+
+            setNoteDraft('');
+            setEditingNoteId(null);
+            setSelectionToolbar(null);
+            window.getSelection?.()?.removeAllRanges();
+        } catch (error) {
+            console.error('[ReaderPage] Note save failed:', error);
+            showToast('Failed to save note', 'error');
+        }
+    };
+
+    const editNote = (note) => {
+        setEditingNoteId(note._id);
+        setNoteDraft(note.note || '');
+        setActivePanel('notes');
+    };
+
+    const deleteNote = async (noteId) => {
+        try {
+            await api.delete(`/lib/books/notes/${noteId}`);
+            setNotes(prev => prev.filter(note => note._id !== noteId));
+            if (editingNoteId === noteId) {
+                setEditingNoteId(null);
+                setNoteDraft('');
+            }
+            showToast('Note deleted');
+        } catch (error) {
+            console.error('[ReaderPage] Note delete failed:', error);
+            showToast('Failed to delete note', 'error');
+        }
+    };
+
+    const saveHighlight = async ({ text, color = 'yellow', pageNumber = currentPage }) => {
+        const selectedText = text?.trim();
+        if (!selectedText) return;
+
+        try {
+            const res = await api.post(ENDPOINTS.BOOKS.HIGHLIGHTS(id), {
+                selectedText,
+                color,
+                pageNumber,
+            });
+            const created = res?.data || res?.highlight;
+            if (created) setHighlights(prev => [created, ...prev]);
+            setSelectionToolbar(null);
+            window.getSelection?.()?.removeAllRanges();
+            showToast('Highlight saved');
+        } catch (error) {
+            console.error('[ReaderPage] Highlight save failed:', error);
+            showToast('Failed to save highlight', 'error');
+        }
+    };
+
+    const deleteHighlight = async (highlightId) => {
+        try {
+            await api.delete(`/lib/books/highlights/${highlightId}`);
+            setHighlights(prev => prev.filter(highlight => highlight._id !== highlightId));
+            showToast('Highlight deleted');
+        } catch (error) {
+            console.error('[ReaderPage] Highlight delete failed:', error);
+            showToast('Failed to delete highlight', 'error');
+        }
+    };
+
+    const exportWorkspaceMarkdown = () => {
+        const title = book?.data?.title || book?.title || 'ReadNest Book';
+        const author = book?.data?.author || book?.author || 'Unknown author';
+        const lines = [
+            `# ${title}`,
+            '',
+            `Author: ${author}`,
+            `Exported: ${new Date().toLocaleString()}`,
+            '',
+            '## Notes',
+            '',
+            ...(notes.length
+                ? [...notes]
+                    .sort((a, b) => (a.pageNumber || 0) - (b.pageNumber || 0))
+                    .flatMap((note) => [`### Page ${note.pageNumber}`, '', note.note || '', ''])
+                : ['No notes yet.', '']),
+            '## Highlights',
+            '',
+            ...(highlights.length
+                ? [...highlights]
+                    .sort((a, b) => (a.pageNumber || 0) - (b.pageNumber || 0))
+                    .flatMap((highlight) => [
+                        `### Page ${highlight.pageNumber}`,
+                        '',
+                        `> ${highlight.SelectedText || highlight.selectedText || ''}`,
+                        '',
+                        `Color: ${highlight.color || 'yellow'}`,
+                        '',
+                    ])
+                : ['No highlights yet.', '']),
+        ];
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') || 'readnest-notes'}.md`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleTextSelection = () => {
+        const selection = window.getSelection?.();
+        const selectedText = selection?.toString().trim();
+        if (!selectedText || selectedText.length < 3) {
+            setSelectionToolbar(null);
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (!rect.width && !rect.height) return;
+
+        setSelectionToolbar({
+            text: selectedText.slice(0, 1200),
+            pageNumber: currentPageRef.current,
+            x: Math.min(window.innerWidth - 180, Math.max(12, rect.left + rect.width / 2 - 92)),
+            y: Math.max(72, rect.top - 54),
+        });
     };
 
     const onDocumentLoadError = err => {
@@ -613,6 +880,7 @@ const ReaderPage = () => {
         touchStartRef.current = {
             x: touch.clientX,
             y: touch.clientY,
+            at: Date.now(),
         };
     };
 
@@ -621,9 +889,14 @@ const ReaderPage = () => {
         const touch = event.changedTouches[0];
         const deltaX = touch.clientX - touchStartRef.current.x;
         const deltaY = touch.clientY - touchStartRef.current.y;
+        const elapsed = Date.now() - touchStartRef.current.at;
         touchStartRef.current = null;
 
-        if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+        const horizontalIntent = Math.abs(deltaX) > Math.abs(deltaY) * 1.45;
+        const enoughDistance = Math.abs(deltaX) >= Math.min(90, Math.max(44, window.innerWidth * 0.14));
+        const decisiveSwipe = elapsed < 650 && enoughDistance && horizontalIntent;
+
+        if (!decisiveSwipe) return;
 
         if (deltaX < 0) {
             goToNextPage();
@@ -689,6 +962,50 @@ const ReaderPage = () => {
                 )}
             </AnimatePresence>
 
+            <AnimatePresence>
+                {selectionToolbar && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                        className="fixed z-[120] flex items-center gap-2 rounded-2xl border border-white/10 bg-[#111827]/95 p-2 text-white shadow-2xl backdrop-blur-xl"
+                        style={{ left: selectionToolbar.x, top: selectionToolbar.y }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => saveHighlight({ text: selectionToolbar.text, pageNumber: selectionToolbar.pageNumber })}
+                            className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#c97b6b] px-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-[#b8695c]"
+                        >
+                            <Highlighter className="h-3.5 w-3.5" />
+                            Highlight
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setNoteDraft(selectionToolbar.text);
+                                setEditingNoteId(null);
+                                setActivePanel('notes');
+                            }}
+                            className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-white/10"
+                        >
+                            <StickyNote className="h-3.5 w-3.5" />
+                            Note
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSelectionToolbar(null);
+                                window.getSelection?.()?.removeAllRanges();
+                            }}
+                            className="grid h-9 w-9 place-items-center rounded-xl hover:bg-white/10"
+                            aria-label="Close selection toolbar"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* -- TOP TOOLBAR ----------------------------------------------- */}
             <header
                 className={`flex-none min-h-14 px-3 sm:px-4 flex items-center justify-between z-30 border-b ${theme.border} shadow-lg shadow-black/10`}
@@ -745,6 +1062,10 @@ const ReaderPage = () => {
                         <span className={`h-1.5 w-1.5 rounded-full ${saveStatus === 'saving' ? 'bg-amber-400 animate-pulse' : saveStatus === 'saved' ? 'bg-emerald-400' : 'bg-[#c97b6b]'}`} />
                         {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Unsaved'}
                     </span>
+                    <span className={`hidden xl:inline-flex items-center gap-1.5 rounded-full border ${theme.border} bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${theme.text} opacity-70`}>
+                        <Clock className="h-3 w-3 text-[#c97b6b]" />
+                        {formatReadingTime(readingSeconds)}
+                    </span>
                     <button
                         id="btn-zoom-out"
                         onClick={zoomOut}
@@ -765,6 +1086,26 @@ const ReaderPage = () => {
                         <ZoomIn className="w-4 h-4" />
                     </button>
                     <div className="hidden sm:block w-px h-5 bg-white/10 mx-1" />
+                    <button
+                        id="btn-navigation"
+                        onClick={() => setActivePanel(p => (p === 'navigation' ? null : 'navigation'))}
+                        title="Contents and pages"
+                        className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${
+                            activePanel === 'navigation' ? 'text-[#c97b6b]' : `${theme.text} opacity-70`
+                        }`}
+                    >
+                        <ListTree className="w-4 h-4" />
+                    </button>
+                    <button
+                        id="btn-notes"
+                        onClick={() => setActivePanel(p => (p === 'notes' ? null : 'notes'))}
+                        title="Notes and highlights"
+                        className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${
+                            activePanel === 'notes' ? 'text-[#c97b6b]' : `${theme.text} opacity-70`
+                        }`}
+                    >
+                        <StickyNote className="w-4 h-4" />
+                    </button>
                     <button
                         id="btn-bookmark"
                         onClick={toggleBookmark}
@@ -826,6 +1167,7 @@ const ReaderPage = () => {
                     ref={pageContainerRef}
                     onTouchStart={handleReaderTouchStart}
                     onTouchEnd={handleReaderTouchEnd}
+                    onMouseUp={handleTextSelection}
                     className="flex-1 overflow-auto flex items-start justify-center px-2 pb-28 pt-5 sm:px-6 sm:pb-24 sm:pt-7"
                     style={{ touchAction: 'pan-y' }}
                 >
@@ -886,6 +1228,384 @@ const ReaderPage = () => {
                         </div>
                     )}
                 </main>
+
+                {/* -- NAVIGATION PANEL ------------------------------------ */}
+                <AnimatePresence>
+                    {activePanel === 'navigation' && (
+                        <motion.aside
+                            initial={{ x: 360, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 360, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+                            className={`absolute right-0 inset-y-0 z-40 flex w-full flex-col border-l sm:w-[360px] ${theme.border}`}
+                            style={{ background: theme.bg }}
+                        >
+                            <div className={`flex items-center justify-between border-b p-5 ${theme.border}`}>
+                                <div>
+                                    <h2 className={`text-xs font-bold uppercase tracking-widest ${theme.text}`}>
+                                        Contents
+                                    </h2>
+                                    <p className={`mt-1 text-xs opacity-45 ${theme.text}`}>
+                                        Resume, pages, outline, bookmarks
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setActivePanel(null)}
+                                    className={`rounded p-1 ${theme.text} hover:bg-white/10`}
+                                    aria-label="Close contents"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 space-y-6 overflow-y-auto p-5">
+                                {savedResumePage && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCurrentPage(Math.min(savedResumePage, totalPages || savedResumePage));
+                                            setActivePanel(null);
+                                        }}
+                                        className={`w-full rounded-2xl border p-4 text-left transition hover:bg-white/10 ${theme.border}`}
+                                    >
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                            Resume from last session
+                                        </p>
+                                        <div className="mt-3 flex items-center justify-between gap-3">
+                                            <span className={`text-lg font-bold ${theme.text}`}>Page {savedResumePage}</span>
+                                            <span className="rounded-full bg-[#c97b6b] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
+                                                Resume
+                                            </span>
+                                        </div>
+                                    </button>
+                                )}
+
+                                <section>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                            Table of contents
+                                        </p>
+                                        <span className={`text-[10px] opacity-35 ${theme.text}`}>
+                                            {pdfOutline.length || 'No outline'}
+                                        </span>
+                                    </div>
+
+                                    {pdfOutline.length ? (
+                                        <div className="space-y-1.5">
+                                            {pdfOutline.slice(0, 28).map((item, index) => (
+                                                <button
+                                                    key={`${item.title}-${index}`}
+                                                    type="button"
+                                                    disabled={!item.pageNumber}
+                                                    onClick={() => {
+                                                        if (!item.pageNumber) return;
+                                                        setCurrentPage(item.pageNumber);
+                                                        setActivePanel(null);
+                                                    }}
+                                                    className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-xs transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45 ${theme.border} ${theme.text}`}
+                                                    style={{ paddingLeft: `${12 + item.depth * 14}px` }}
+                                                >
+                                                    <span className="line-clamp-2">{item.title}</span>
+                                                    {item.pageNumber && (
+                                                        <span className="shrink-0 text-[10px] opacity-50">p. {item.pageNumber}</span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className={`rounded-2xl border p-4 text-sm leading-6 opacity-55 ${theme.border} ${theme.text}`}>
+                                            This PDF does not include an outline. Use page thumbnails or bookmarks to jump around.
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                            Page thumbnails
+                                        </p>
+                                        <span className={`text-[10px] opacity-35 ${theme.text}`}>
+                                            first {Math.min(totalPages || 0, 18)}
+                                        </span>
+                                    </div>
+
+                                    {pdfFile && totalPages > 0 ? (
+                                        <Document file={pdfFile} loading={null} error={null}>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {Array.from({ length: Math.min(totalPages, 18) }, (_, index) => {
+                                                    const pageNumber = index + 1;
+                                                    const isActive = pageNumber === currentPage;
+
+                                                    return (
+                                                        <button
+                                                            key={pageNumber}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCurrentPage(pageNumber);
+                                                                setActivePanel(null);
+                                                            }}
+                                                            className={`overflow-hidden rounded-xl border p-1 text-left transition ${
+                                                                isActive
+                                                                    ? 'border-[#c97b6b] bg-[#c97b6b]/10'
+                                                                    : `${theme.border} bg-white/5 hover:bg-white/10`
+                                                            }`}
+                                                            aria-label={`Go to page ${pageNumber}`}
+                                                        >
+                                                            <div className="flex min-h-[92px] items-center justify-center overflow-hidden rounded-lg bg-white">
+                                                                <Page
+                                                                    pageNumber={pageNumber}
+                                                                    width={78}
+                                                                    renderAnnotationLayer={false}
+                                                                    renderTextLayer={false}
+                                                                    loading={<span className="text-[10px] text-slate-400">...</span>}
+                                                                />
+                                                            </div>
+                                                            <span className={`mt-2 block text-center text-[10px] font-bold ${isActive ? 'text-[#c97b6b]' : `${theme.text} opacity-50`}`}>
+                                                                {pageNumber}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </Document>
+                                    ) : (
+                                        <div className={`rounded-2xl border p-4 text-sm opacity-55 ${theme.border} ${theme.text}`}>
+                                            Page previews will appear after the PDF loads.
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section>
+                                    <p className={`mb-3 text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                        Bookmarks
+                                    </p>
+                                    {bookmarks.length ? (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[...bookmarks].sort((a, b) => a - b).map((page) => (
+                                                <button
+                                                    key={page}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCurrentPage(page);
+                                                        setActivePanel(null);
+                                                    }}
+                                                    className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition hover:bg-white/10 ${theme.border} ${theme.text}`}
+                                                >
+                                                    Page {page}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className={`rounded-2xl border p-4 text-sm opacity-55 ${theme.border} ${theme.text}`}>
+                                            Bookmark a page to keep it here.
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
+                        </motion.aside>
+                    )}
+                </AnimatePresence>
+
+                {/* -- NOTES & HIGHLIGHTS PANEL ---------------------------- */}
+                <AnimatePresence>
+                    {activePanel === 'notes' && (
+                        <motion.aside
+                            initial={{ x: 380, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 380, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+                            className={`absolute right-0 inset-y-0 z-40 flex w-full flex-col border-l sm:w-[380px] ${theme.border}`}
+                            style={{ background: theme.bg }}
+                        >
+                            <div className={`flex items-center justify-between border-b p-5 ${theme.border}`}>
+                                <div>
+                                    <h2 className={`text-xs font-bold uppercase tracking-widest ${theme.text}`}>
+                                        Notes & Highlights
+                                    </h2>
+                                    <p className={`mt-1 text-xs opacity-45 ${theme.text}`}>
+                                        Page {currentPage} workspace
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={exportWorkspaceMarkdown}
+                                        className={`grid h-9 w-9 place-items-center rounded-xl border ${theme.border} ${theme.text} hover:bg-white/10`}
+                                        title="Export markdown"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setActivePanel(null)}
+                                        className={`rounded p-1 ${theme.text} hover:bg-white/10`}
+                                        aria-label="Close notes"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 space-y-6 overflow-y-auto p-5">
+                                <section className={`rounded-2xl border p-4 ${theme.border} bg-white/5`}>
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                            {editingNoteId ? 'Edit note' : 'Add note'}
+                                        </p>
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest text-[#c97b6b]`}>
+                                            Page {currentPage}
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        value={noteDraft}
+                                        onChange={(event) => setNoteDraft(event.target.value)}
+                                        placeholder="Write a note for this page..."
+                                        className={`min-h-28 w-full resize-none rounded-2xl border ${theme.border} bg-black/10 p-3 text-sm leading-6 ${theme.text} placeholder:text-slate-500 focus:border-[#c97b6b] focus:outline-none`}
+                                    />
+                                    <div className="mt-3 flex items-center justify-between gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditingNoteId(null);
+                                                setNoteDraft('');
+                                            }}
+                                            className={`text-xs font-bold uppercase tracking-widest ${theme.text} opacity-45 hover:opacity-80`}
+                                        >
+                                            Clear
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => saveNote()}
+                                            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#c97b6b] px-4 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-[#b8695c]"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                            {editingNoteId ? 'Update' : 'Save note'}
+                                        </button>
+                                    </div>
+                                </section>
+
+                                <section>
+                                    <p className={`mb-3 text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                        Current page notes
+                                    </p>
+                                    {currentPageNotes.length ? (
+                                        <div className="space-y-2">
+                                            {currentPageNotes.map((note) => (
+                                                <div key={note._id} className={`rounded-2xl border p-3 ${theme.border} bg-white/5`}>
+                                                    <p className={`text-sm leading-6 ${theme.text}`}>{note.note}</p>
+                                                    <div className="mt-3 flex items-center gap-2">
+                                                        <button onClick={() => editNote(note)} className="text-[10px] font-bold uppercase tracking-widest text-[#c97b6b]">Edit</button>
+                                                        <button onClick={() => deleteNote(note._id)} className="text-[10px] font-bold uppercase tracking-widest text-red-400">Delete</button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className={`rounded-2xl border p-4 text-sm opacity-55 ${theme.border} ${theme.text}`}>
+                                            No notes on this page yet.
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section>
+                                    <div className={`mb-4 flex items-center gap-2 rounded-2xl border ${theme.border} bg-white/5 px-3 py-2`}>
+                                        <Search className={`h-4 w-4 ${theme.text} opacity-40`} />
+                                        <input
+                                            value={noteSearch}
+                                            onChange={(event) => setNoteSearch(event.target.value)}
+                                            placeholder="Search notes and highlights..."
+                                            className={`w-full border-none bg-transparent text-sm ${theme.text} placeholder:text-slate-500 focus:outline-none`}
+                                        />
+                                    </div>
+
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                            All notes
+                                        </p>
+                                        <span className={`text-[10px] opacity-35 ${theme.text}`}>{filteredNotes.length}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {filteredNotes.length ? filteredNotes.map((note) => (
+                                            <div key={note._id} className={`rounded-2xl border p-3 ${theme.border} bg-white/5`}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCurrentPage(note.pageNumber);
+                                                        setActivePanel(null);
+                                                    }}
+                                                    className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#c97b6b]"
+                                                >
+                                                    Page {note.pageNumber}
+                                                </button>
+                                                <p className={`text-sm leading-6 ${theme.text}`}>{note.note}</p>
+                                                <div className="mt-3 flex items-center gap-2">
+                                                    <button onClick={() => editNote(note)} className="text-[10px] font-bold uppercase tracking-widest text-[#c97b6b]">Edit</button>
+                                                    <button onClick={() => deleteNote(note._id)} className="text-[10px] font-bold uppercase tracking-widest text-red-400">Delete</button>
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <div className={`rounded-2xl border p-4 text-sm opacity-55 ${theme.border} ${theme.text}`}>
+                                                No notes found.
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+
+                                <section>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <p className={`text-[10px] font-bold uppercase tracking-widest opacity-45 ${theme.text}`}>
+                                            Highlights
+                                        </p>
+                                        <span className={`text-[10px] opacity-35 ${theme.text}`}>{filteredHighlights.length}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {filteredHighlights.length ? filteredHighlights.map((highlight) => {
+                                            const color = highlight.color || 'yellow';
+                                            const colorClass = {
+                                                yellow: 'bg-yellow-300',
+                                                green: 'bg-emerald-300',
+                                                blue: 'bg-sky-300',
+                                                pink: 'bg-pink-300',
+                                            }[color] || 'bg-yellow-300';
+
+                                            return (
+                                                <div key={highlight._id} className={`rounded-2xl border p-3 ${theme.border} bg-white/5`}>
+                                                    <div className="mb-2 flex items-center justify-between gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCurrentPage(highlight.pageNumber);
+                                                                setActivePanel(null);
+                                                            }}
+                                                            className="text-[10px] font-bold uppercase tracking-widest text-[#c97b6b]"
+                                                        >
+                                                            Page {highlight.pageNumber}
+                                                        </button>
+                                                        <span className={`h-3 w-3 rounded-full ${colorClass}`} />
+                                                    </div>
+                                                    <p className={`text-sm leading-6 ${theme.text}`}>
+                                                        {highlight.SelectedText || highlight.selectedText}
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteHighlight(highlight._id)}
+                                                        className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-red-400"
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            );
+                                        }) : (
+                                            <div className={`rounded-2xl border p-4 text-sm opacity-55 ${theme.border} ${theme.text}`}>
+                                                Select text in the PDF to save highlights.
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            </div>
+                        </motion.aside>
+                    )}
+                </AnimatePresence>
 
                 {/* -- SETTINGS PANEL -------------------------------------- */}
                 <AnimatePresence>
@@ -1051,7 +1771,7 @@ const ReaderPage = () => {
                                     },
                                     {
                                         label: 'Reading Time',
-                                        value: `${Math.floor(readingSeconds / 60)} min`,
+                                        value: formatReadingTime(readingSeconds),
                                         icon: Clock,
                                     },
                                     {

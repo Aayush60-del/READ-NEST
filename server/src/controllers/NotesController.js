@@ -6,8 +6,8 @@ const NoteModel = require("../models/Notes");
 const UploadNotes = async (req, res) => {
     try {
         const userId = req.user.id;
-        const bookId = req.params.BookId;
-        const { note } = req.body;
+        const bookId = req.params.id;
+        const { note, pageNumber } = req.body;
 
         const bookCheck = await ReadingProgressModel.findOne({
             userId,
@@ -24,7 +24,7 @@ const UploadNotes = async (req, res) => {
             userId,
             bookId,
             note,
-            pageNumber: bookCheck.currentPage
+            pageNumber: Math.max(1, Number(pageNumber) || bookCheck.currentPage || 1)
         });
 
         res.status(200).json({
@@ -65,12 +65,17 @@ const GetNotes = async (req, res) => {
 const UpdateNotes = async (req, res) => {
     try {
         const userId = req.user.id;
-        const noteId = req.params.NotesId;
-        const { note } = req.body;
+        const noteId = req.params.noteId || req.params.NotesId;
+        const { note, pageNumber } = req.body;
+
+        const update = { note };
+        if (Number.isFinite(Number(pageNumber)) && Number(pageNumber) >= 1) {
+            update.pageNumber = Math.floor(Number(pageNumber));
+        }
 
         const updatedNote = await NoteModel.findOneAndUpdate(
             { _id: noteId, userId },
-            { note },
+            update,
             { returnDocument: 'after' }
         );
 
@@ -94,7 +99,7 @@ const UpdateNotes = async (req, res) => {
 const DeleteNotes = async (req, res) => {
     try {
         const userId = req.user.id;
-        const noteId = req.params.NotesId;
+        const noteId = req.params.noteId || req.params.NotesId || req.params.id;
 
         const deletedNote = await NoteModel.findOneAndDelete({
             _id: noteId,

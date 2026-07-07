@@ -1,5 +1,53 @@
 const StreakModel = require("../models/ReadStreak");
+const ReadingSessionModel = require("../models/ReadingSession");
 const notificationService = require("../services/notificationService");
+
+const getQualifiedReadDates = async (userId, limitDays = 60) => {
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    since.setDate(since.getDate() - limitDays);
+
+    const sessions = await ReadingSessionModel.find({
+        userId,
+        qualifiedForStreak: true,
+        sessionDate: { $gte: since }
+    }).select("sessionDate").sort({ sessionDate: 1 }).lean();
+
+    const seen = new Set();
+    return sessions
+        .map((session) => {
+            const day = new Date(session.sessionDate);
+            day.setHours(0, 0, 0, 0);
+            return day;
+        })
+        .filter((day) => {
+            const key = day.getTime();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+};
+
+const calculateCurrentStreak = (readDates = []) => {
+    const readSet = new Set(
+        readDates.map((date) => {
+            const day = new Date(date);
+            day.setHours(0, 0, 0, 0);
+            return day.getTime();
+        })
+    );
+
+    let cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    let streak = 0;
+
+    while (readSet.has(cursor.getTime())) {
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+};
 
 /**
  * GET /lib/streak
@@ -10,15 +58,18 @@ const getStreak = async (req, res) => {
         const { id: userId } = req.user;
 
         let streakData = await StreakModel.findOne({ userId });
+        const qualifiedReadDates = await getQualifiedReadDates(userId);
+        const readDates = qualifiedReadDates.length ? qualifiedReadDates : (streakData?.readDates || []);
 
         if (!streakData) {
+            const streak = calculateCurrentStreak(readDates);
             return res.status(200).json({
                 message: "No streak data found",
                 data: {
-                    streak: 0,
-                    lastReadDate: null,
-                    readDates: [],
-                    last7Days: _getLast7Days([])
+                    streak,
+                    lastReadDate: readDates[readDates.length - 1] || null,
+                    readDates,
+                    last7Days: _getLast7Days(readDates)
                 }
             });
         }
@@ -28,8 +79,8 @@ const getStreak = async (req, res) => {
             data: {
                 streak: streakData.streak,
                 lastReadDate: streakData.lastReadDate,
-                readDates: streakData.readDates,
-                last7Days: _getLast7Days(streakData.readDates)
+                readDates,
+                last7Days: _getLast7Days(readDates)
             }
         });
     } catch (err) {
@@ -52,6 +103,18 @@ const markRead = async (req, res) => {
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
+        const qualifiedToday = await ReadingSessionModel.exists({
+            userId,
+            qualifiedForStreak: true,
+            sessionDate: today
+        });
+
+        if (!qualifiedToday) {
+            return res.status(400).json({
+                message: "Read for at least 5 active minutes before marking a streak day."
+            });
+        }
 
         let streakData = await StreakModel.findOne({ userId });
 

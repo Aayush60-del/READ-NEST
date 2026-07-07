@@ -66,6 +66,8 @@ router.get("/reading-stats", protect, getReadingStats);
 
 router.post("/books/:id/notes", protect, UploadNotes);
 router.get("/books/:id/notes", protect, GetNotes);
+router.put("/books/notes/:noteId", protect, UpdateNotes);
+router.delete("/books/notes/:noteId", protect, DeleteNotes);
 router.put("/books/:noteId", protect, UpdateNotes);
 router.delete("/books/:id/notes", protect, DeleteNotes);
 

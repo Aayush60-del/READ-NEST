@@ -1,6 +1,8 @@
+const mongoose = require("mongoose");
 const BookModel = require("../models/Book");
 const ReadingProgressModel = require("../models/ReadingProgress");
 const BookMark = require("../models/BookMark");
+const ReadingSessionModel = require("../models/ReadingSession");
 
 
 
@@ -233,6 +235,31 @@ const getReadingStats = async (req, res) => {
 
         const progressItems = await ReadingProgressModel.find({ userId }).select("currentPage").lean();
         const totalPagesRead = progressItems.reduce((sum, book) => sum + book.currentPage, 0);
+        const sessionStats = await ReadingSessionModel.aggregate([
+            { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+            {
+                $group: {
+                    _id: null,
+                    totalActiveSeconds: { $sum: { $ifNull: ["$activeSeconds", 0] } },
+                    totalSessions: { $sum: 1 },
+                    qualifiedSessions: {
+                        $sum: { $cond: [{ $eq: ["$qualifiedForStreak", true] }, 1, 0] }
+                    },
+                    pagesTouchedNested: { $push: "$pagesVisited" }
+                }
+            }
+        ]);
+
+        const sessionSummary = sessionStats[0] || {};
+        const pagesTouched = new Set(
+            (sessionSummary.pagesTouchedNested || [])
+                .flat()
+                .filter((page) => Number.isFinite(Number(page)))
+        ).size;
+        const qualifiedDates = await ReadingSessionModel.find({
+            userId,
+            qualifiedForStreak: true
+        }).select("sessionDate").sort({ sessionDate: 1 }).lean();
 
         const CompletionRate =
             totalBooks > 0
@@ -246,7 +273,13 @@ const getReadingStats = async (req, res) => {
                 CompletedBooks,
                 CurrentlyReading,
                 totalPagesRead,
-                CompletionRate
+                CompletionRate,
+                totalReadingSeconds: sessionSummary.totalActiveSeconds || 0,
+                totalReadingMinutes: Math.round((sessionSummary.totalActiveSeconds || 0) / 60),
+                totalSessions: sessionSummary.totalSessions || 0,
+                qualifiedSessions: sessionSummary.qualifiedSessions || 0,
+                pagesTouched,
+                readingDays: qualifiedDates.map((session) => session.sessionDate)
             }
         });
     }
