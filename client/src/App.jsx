@@ -7,6 +7,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { clearSession, fetchCurrentUser, getStoredSession } from '@/lib/api';
 
 const ONBOARDING_STORAGE_KEY = 'readnest_onboarding_seen';
+const MOBILE_ONBOARDING_QUERY = '(max-width: 767px)';
 
 // Lazy loaded pages
 const LandingPage = lazy(() => import('./Pages/LandingPage'));
@@ -48,7 +49,40 @@ const FallbackLoader = () => (
   </div>
 );
 
+const isMobileOnboardingViewport = () => (
+  typeof window !== 'undefined' && window.matchMedia(MOBILE_ONBOARDING_QUERY).matches
+);
+
+const useMobileOnboardingViewport = () => {
+  const [isMobileViewport, setIsMobileViewport] = useState(isMobileOnboardingViewport);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(MOBILE_ONBOARDING_QUERY);
+    const handleChange = () => setIsMobileViewport(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  return isMobileViewport;
+};
+
+const MobileOnlyOnboardingRoute = () => {
+  const isMobileViewport = useMobileOnboardingViewport();
+
+  if (!isMobileViewport) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <OnboardingPage />;
+};
+
 const PublicEntryRoute = () => {
+  const isMobileViewport = useMobileOnboardingViewport();
   const [sessionState, setSessionState] = useState(() => {
     const { token, user } = getStoredSession();
     return { token, user, loading: Boolean(token) && !user };
@@ -89,7 +123,7 @@ const PublicEntryRoute = () => {
 
   const hasSeenOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
 
-  if (!hasSeenOnboarding) {
+  if (isMobileViewport && !hasSeenOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -104,7 +138,7 @@ function App() {
           <Suspense fallback={<FallbackLoader />}>
             <Routes>
               <Route path="/" element={<PublicEntryRoute />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/onboarding" element={<MobileOnlyOnboardingRoute />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/oauth-success" element={<OAuthSuccess />} />
               <Route path="/feedback" element={<FeedbackPage />} />

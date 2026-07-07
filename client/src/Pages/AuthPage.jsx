@@ -24,13 +24,13 @@ const AnimatedBackground = () => (
 );
 
 const BrandIllustration = () => (
-  <div className="relative mt-10 hidden h-[310px] w-full max-w-[520px] lg:block">
-    <div className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#c97b6b]/18 blur-3xl" />
+  <div className="relative mt-7 hidden h-[240px] w-full max-w-[430px] lg:block">
+    <div className="absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#c97b6b]/18 blur-3xl" />
     <svg
       viewBox="0 0 520 310"
       role="img"
       aria-label="Glowing open book under a moonlit library sky"
-      className="relative h-full w-full drop-shadow-[0_28px_60px_rgba(0,0,0,0.45)]"
+      className="relative h-full w-full drop-shadow-[0_22px_48px_rgba(0,0,0,0.42)]"
     >
       <defs>
         <linearGradient id="bookCover" x1="80" x2="440" y1="170" y2="255" gradientUnits="userSpaceOnUse">
@@ -157,18 +157,18 @@ const AuthPage = () => {
   const isSignup = activeTab === 'signup';
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05070c] px-4 py-6 text-white selection:bg-[#c97b6b] selection:text-white sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#05070c] px-4 py-5 text-white selection:bg-[#c97b6b] selection:text-white sm:px-6 lg:px-8">
       <AnimatedBackground />
 
       <Link
         to="/"
-        className="absolute left-5 top-5 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white/55 backdrop-blur-xl transition hover:border-white/20 hover:text-white sm:left-8 sm:top-8"
+        className="absolute left-5 top-5 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white/55 backdrop-blur-xl transition hover:border-white/20 hover:text-white sm:left-8 sm:top-7"
       >
         <AnimateIcon animateOnHover animation="turn"><ArrowLeft className="h-4 w-4" /></AnimateIcon>
         Home
       </Link>
 
-      <main className="mx-auto grid min-h-[calc(100vh-3rem)] w-full max-w-7xl items-center gap-8 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,500px)] lg:gap-14 lg:pt-0">
+      <main className="mx-auto grid min-h-[calc(100vh-2.5rem)] w-full max-w-6xl items-center gap-8 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(400px,450px)] lg:gap-12 lg:pt-0">
         <motion.section
           initial={{ opacity: 0, x: -28 }}
           animate={{ opacity: 1, x: 0 }}
@@ -177,35 +177,35 @@ const AuthPage = () => {
         >
           <div className="mx-auto flex max-w-xl flex-col items-center lg:mx-0 lg:items-start">
             <Link to="/" className="group inline-flex items-center gap-3">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl border border-[#f6d391]/25 bg-[#c97b6b]/15 shadow-[0_0_40px_rgba(201,123,107,0.18)] backdrop-blur-xl">
-                <BookOpenCheck className="h-7 w-7 text-[#f6d391] transition-transform duration-300 group-hover:scale-110" />
+              <span className="grid h-12 w-12 place-items-center rounded-[1.25rem] border border-[#f6d391]/25 bg-[#c97b6b]/15 shadow-[0_0_36px_rgba(201,123,107,0.18)] backdrop-blur-xl">
+                <BookOpenCheck className="h-6 w-6 text-[#f6d391] transition-transform duration-300 group-hover:scale-110" />
               </span>
               <span>
-                <span className="block text-4xl font-bold tracking-tight text-white sm:text-5xl" style={{ fontFamily: 'var(--font-heading)' }}>
+                <span className="block text-3xl font-bold tracking-tight text-white sm:text-4xl" style={{ fontFamily: 'var(--font-heading)' }}>
                   ReadNest
                 </span>
-                <span className="mt-1 block text-xs font-bold uppercase tracking-[0.36em] text-[#f6d391]/70">
+                <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.34em] text-[#f6d391]/70">
                   Literary Sanctuary
                 </span>
               </span>
             </Link>
 
-            <h1 className="mt-10 max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mt-8 max-w-2xl text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-[3.35rem]">
               Enter a calmer way to read, track, and return to your books.
             </h1>
-            <p className="mt-5 max-w-lg text-base leading-8 text-white/62 sm:text-lg">
+            <p className="mt-4 max-w-md text-base leading-7 text-white/62">
               Read smarter, track progress, and build a consistent reading habit.
             </p>
 
-            <div className="mt-8 grid w-full max-w-lg grid-cols-3 gap-3">
+            <div className="mt-7 grid w-full max-w-md grid-cols-3 gap-3">
               {[
                 { icon: LibraryBig, label: 'Library' },
                 { icon: Moon, label: 'Focus' },
                 { icon: Sparkles, label: 'Progress' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-4 text-center backdrop-blur-xl lg:text-left">
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3.5 text-center backdrop-blur-xl lg:text-left">
                   <Icon className="mx-auto h-5 w-5 text-[#f6d391] lg:mx-0" />
-                  <p className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-white/55">{label}</p>
+                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">{label}</p>
                 </div>
               ))}
             </div>
@@ -218,31 +218,31 @@ const AuthPage = () => {
           initial={{ opacity: 0, y: 34 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full"
+          className="w-full lg:justify-self-end"
         >
-          <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-[#101722]/72 p-5 shadow-[0_30px_90px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-7 lg:rounded-[32px]">
+          <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#101722]/72 p-5 shadow-[0_28px_80px_rgba(0,0,0,0.40)] backdrop-blur-2xl sm:p-6 lg:rounded-[30px]">
             <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
             <div className="absolute -right-24 -top-24 h-48 w-48 rounded-full bg-[#c97b6b]/14 blur-3xl" />
             <div className="absolute -bottom-28 left-10 h-56 w-56 rounded-full bg-[#2f766d]/12 blur-3xl" />
 
             <div className="relative">
-              <div className="mb-7">
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#f6d391]/70">
+              <div className="mb-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#f6d391]/70">
                   {loginMode === 'admin' ? 'Admin access' : 'Member access'}
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
                   {isSignup ? 'Create your ReadNest account' : 'Welcome back'}
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-white/55">
+                <p className="mt-2 text-sm leading-6 text-white/55">
                   {isSignup ? 'Start building your digital library.' : 'Continue your reading journey.'}
                 </p>
               </div>
 
-              <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/20 p-1.5">
+              <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/20 p-1">
                 <button
                   type="button"
                   onClick={() => setLoginMode('user')}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold uppercase tracking-widest transition-all ${
+                  className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold uppercase tracking-widest transition-all ${
                     loginMode === 'user'
                       ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
                       : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
@@ -254,7 +254,7 @@ const AuthPage = () => {
                 <button
                   type="button"
                   onClick={() => setLoginMode('admin')}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold uppercase tracking-widest transition-all ${
+                  className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold uppercase tracking-widest transition-all ${
                     loginMode === 'admin'
                       ? 'bg-[#c97b6b]/18 text-[#f6d391] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
                       : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
@@ -271,7 +271,7 @@ const AuthPage = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mb-5 overflow-hidden"
+                    className="mb-4 overflow-hidden"
                   >
                     <div className="flex items-start gap-3 rounded-2xl border border-[#c97b6b]/25 bg-[#c97b6b]/10 px-4 py-3 text-sm leading-6 text-[#f7d8bd]">
                       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
@@ -281,8 +281,8 @@ const AuthPage = () => {
                 )}
               </AnimatePresence>
 
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-7">
-                <TabsList className="grid h-[52px] w-full grid-cols-2 rounded-2xl border border-white/10 bg-black/25 p-1.5">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-5">
+                <TabsList className="grid h-[46px] w-full grid-cols-2 rounded-2xl border border-white/10 bg-black/25 p-1">
                   <TabsTrigger
                     value="signin"
                     className="rounded-xl text-sm font-bold tracking-wide text-white/45 transition-all duration-300 data-[state=active]:bg-[#c97b6b] data-[state=active]:text-white data-[state=active]:shadow-[0_12px_30px_rgba(201,123,107,0.25)]"
@@ -306,7 +306,7 @@ const AuthPage = () => {
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    className="space-y-5"
+                    className="space-y-4"
                   >
                     {isSignup && (
                       <div className="space-y-2">
@@ -320,7 +320,7 @@ const AuthPage = () => {
                           placeholder="Enter your name"
                           value={formData.name}
                           onChange={handleChange}
-                          className="h-[52px] rounded-2xl border-white/10 bg-white/[0.055] px-4 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/24 focus-visible:border-[#f6d391]/70 focus-visible:ring-4 focus-visible:ring-[#c97b6b]/20"
+                          className="h-[46px] rounded-2xl border-white/10 bg-white/[0.055] px-4 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/24 focus-visible:border-[#f6d391]/70 focus-visible:ring-4 focus-visible:ring-[#c97b6b]/20"
                         />
                       </div>
                     )}
@@ -336,7 +336,7 @@ const AuthPage = () => {
                         placeholder="hello@example.com"
                         value={formData.email}
                         onChange={handleChange}
-                        className="h-[52px] rounded-2xl border-white/10 bg-white/[0.055] px-4 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/24 focus-visible:border-[#f6d391]/70 focus-visible:ring-4 focus-visible:ring-[#c97b6b]/20"
+                        className="h-[46px] rounded-2xl border-white/10 bg-white/[0.055] px-4 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/24 focus-visible:border-[#f6d391]/70 focus-visible:ring-4 focus-visible:ring-[#c97b6b]/20"
                       />
                     </div>
 
@@ -351,7 +351,7 @@ const AuthPage = () => {
                         placeholder="********"
                         value={formData.password}
                         onChange={handleChange}
-                        className="h-[52px] rounded-2xl border-white/10 bg-white/[0.055] px-4 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/24 focus-visible:border-[#f6d391]/70 focus-visible:ring-4 focus-visible:ring-[#c97b6b]/20"
+                        className="h-[46px] rounded-2xl border-white/10 bg-white/[0.055] px-4 text-[15px] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-white/24 focus-visible:border-[#f6d391]/70 focus-visible:ring-4 focus-visible:ring-[#c97b6b]/20"
                       />
                     </div>
 
@@ -372,7 +372,7 @@ const AuthPage = () => {
                       <Button
                         type="submit"
                         disabled={status.loading}
-                        className="h-[52px] w-full rounded-2xl bg-[#c97b6b] text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_18px_45px_rgba(201,123,107,0.28)] transition-all hover:bg-[#d98c7c] hover:shadow-[0_22px_55px_rgba(201,123,107,0.36)] disabled:opacity-70"
+                        className="h-[48px] w-full rounded-2xl bg-[#c97b6b] text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_18px_45px_rgba(201,123,107,0.28)] transition-all hover:bg-[#d98c7c] hover:shadow-[0_22px_55px_rgba(201,123,107,0.36)] disabled:opacity-70"
                       >
                         {status.loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {status.loading
@@ -388,7 +388,7 @@ const AuthPage = () => {
 
               {loginMode === 'user' && (
                 <>
-                  <div className="my-7 flex items-center gap-4">
+                  <div className="my-5 flex items-center gap-4">
                     <div className="h-px flex-1 bg-white/10" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/28">Or continue with</span>
                     <div className="h-px flex-1 bg-white/10" />
@@ -399,7 +399,7 @@ const AuthPage = () => {
                       type="button"
                       onClick={() => { window.location.href = `${API_BASE_URL}/auth/google`; }}
                       variant="outline"
-                      className="h-12 rounded-2xl border-white/10 bg-white/[0.045] text-white/72 transition-colors hover:bg-white/[0.075] hover:text-white"
+                      className="h-[46px] rounded-2xl border-white/10 bg-white/[0.045] text-white/72 transition-colors hover:bg-white/[0.075] hover:text-white"
                     >
                       <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" fill="currentColor">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -413,7 +413,7 @@ const AuthPage = () => {
                       type="button"
                       variant="outline"
                       onClick={() => { window.location.href = `${API_BASE_URL}/auth/github`; }}
-                      className="h-12 rounded-2xl border-white/10 bg-white/[0.045] text-white/72 transition-colors hover:bg-white/[0.075] hover:text-white"
+                      className="h-[46px] rounded-2xl border-white/10 bg-white/[0.045] text-white/72 transition-colors hover:bg-white/[0.075] hover:text-white"
                     >
                       <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" fill="currentColor">
                         <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />

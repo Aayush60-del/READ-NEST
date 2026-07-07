@@ -101,7 +101,10 @@ const LandingAdvancedEffects = () => {
 
         const heading = section.querySelector("h2");
         const smallText = section.querySelector("p");
-        const cards = section.querySelectorAll("article, .card, [class*='rounded']");
+        const cards =
+          section.id === "testimonials"
+            ? []
+            : section.querySelectorAll("article, .card, [class*='rounded']");
 
         if (heading) {
           gsap.fromTo(

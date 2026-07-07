@@ -34,6 +34,14 @@ const DashboardNavbar = ({ hideLogo = true }) => {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    document.body.style.overflow = mobileNavOpen ? 'hidden' : '';
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileNavOpen]);
+
   const signOut = () => {
     clearSession();
     setProfileOpen(false);
@@ -49,7 +57,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full border-b border-[#e8e4db] bg-[#fcf9f2]/95 py-4 backdrop-blur-xl transition-colors duration-300 dark:border-white/[0.06] dark:bg-[#070b12]/95 md:py-8">
+    <header className="sticky top-0 z-[90] w-full border-b border-[#e8e4db] bg-[#fcf9f2]/95 py-4 backdrop-blur-xl transition-colors duration-300 dark:border-white/[0.06] dark:bg-[#070b12]/95 md:py-8">
       <div className="w-full max-w-[1240px] ml-0 mr-auto px-4 md:px-10 flex items-center justify-between gap-4">
 
         {/* Left Side: Logo (Optional) & Search */}
@@ -364,7 +372,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
       </AnimatePresence>
 
     </header>
-    <MobileBottomNav />
+    {!mobileNavOpen && <MobileBottomNav />}
     </>
   );
 };

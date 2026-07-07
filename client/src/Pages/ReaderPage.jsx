@@ -56,7 +56,7 @@ const READING_MODES = {
     },
 };
 
-const MIN_SESSION_PAGES_FOR_READING_DAY = 5;
+const MIN_SESSION_SECONDS_FOR_READING_DAY = 5 * 60;
 const AUTO_SAVE_DEBOUNCE_MS = 1200;
 const AUTO_SAVE_INTERVAL_MS = 20000;
 const STREAK_MILESTONES = [7, 14, 30, 50, 100, 365];
@@ -144,11 +144,12 @@ const ReaderPage = () => {
     const containerRef = useRef(null);
     const autoSaveTimerRef = useRef(null);
     const autoSaveDebounceRef = useRef(null);
-    const readingStartRef = useRef(Date.now());
+    const activeReadingSecondsRef = useRef(0);
     const sessionReadPagesRef = useRef(new Set());
     const touchStartRef = useRef(null);
     const streakCelebrationAttemptedRef = useRef(false);
     const bookCompletionCelebratedRef = useRef(false);
+    const initialProgressReconciledRef = useRef(false);
     const {
         isOpen: isStreakCelebrationOpen,
         previousStreak,
@@ -195,7 +196,7 @@ const ReaderPage = () => {
 
     // -- Reading stats --------------------------------------------------------
     const [pagesRead, setPagesRead] = useState(new Set());
-    const [readingMinutes, setReadingMinutes] = useState(0);
+    const [readingSeconds, setReadingSeconds] = useState(0);
 
     const theme = READING_MODES[mode];
     const progress =
@@ -232,6 +233,10 @@ const ReaderPage = () => {
         setPdfError(false);
         setPdfUrl(null);
         setPdfData(null);
+        setTotalPages(0);
+        initialProgressReconciledRef.current = false;
+        activeReadingSecondsRef.current = 0;
+        setReadingSeconds(0);
 
         try {
             // 1. Load book metadata
@@ -247,7 +252,12 @@ const ReaderPage = () => {
             if (savedPage && savedPage > 1) {
                 setCurrentPage(savedPage);
             }
-            bookCompletionCelebratedRef.current = Boolean(progressRes?.data?.isCompleted);
+            const savedTotalPages = Number(progressRes?.data?.totalPages) || 0;
+            bookCompletionCelebratedRef.current = Boolean(
+                progressRes?.data?.isCompleted &&
+                savedTotalPages > 0 &&
+                Number(savedPage) >= savedTotalPages
+            );
 
             // 3. Restore bookmarks
             const bookmarkRes = await api
@@ -301,8 +311,11 @@ const ReaderPage = () => {
     // -- Reading time tracker -------------------------------------------------
     useEffect(() => {
         const timer = setInterval(() => {
-            setReadingMinutes(Math.round((Date.now() - readingStartRef.current) / 60000));
-        }, 60000);
+            if (document.visibilityState !== 'visible' || totalPagesRef.current < 1) return;
+
+            activeReadingSecondsRef.current += 1;
+            setReadingSeconds(activeReadingSecondsRef.current);
+        }, 1000);
         return () => clearInterval(timer);
     }, []);
 
@@ -311,17 +324,22 @@ const ReaderPage = () => {
         async (page = currentPageRef.current, silent = false, options = {}) => {
             if (!id || !page || page < 1) return;
             const pageNumber = Number(page);
-            const safeTotalPages = Math.max(1, Number(totalPagesRef.current) || 1);
+            const knownTotalPages = Number(totalPagesRef.current) || 0;
+            if (knownTotalPages < 1) return;
+            const safeTotalPages = Math.max(1, knownTotalPages);
             const percentageCompleted = Math.min(
                 100,
                 Math.round((pageNumber / safeTotalPages) * 100)
             );
             const sessionPagesRead = sessionReadPagesRef.current.size;
+            const sessionReadingSeconds = activeReadingSecondsRef.current;
             const payload = {
                 currentPage: pageNumber,
                 percentageCompleted,
                 progress: percentageCompleted,
+                totalPages: safeTotalPages,
                 sessionPagesRead,
+                sessionReadingSeconds,
             };
 
             if (options.keepalive) {
@@ -361,10 +379,14 @@ const ReaderPage = () => {
                     });
                 }
 
+                if (!isBookCompleted) {
+                    bookCompletionCelebratedRef.current = false;
+                }
+
                 if (
                     !isBookCompleted &&
                     !streakCelebrationAttemptedRef.current &&
-                    sessionPagesRead >= MIN_SESSION_PAGES_FOR_READING_DAY
+                    sessionReadingSeconds >= MIN_SESSION_SECONDS_FOR_READING_DAY
                 ) {
                     streakCelebrationAttemptedRef.current = true;
 
@@ -386,7 +408,7 @@ const ReaderPage = () => {
                                 type: isSevenDayMilestone || isStreakMilestone ? 'streak' : 'pages_read',
                                 achievementKey: isSevenDayMilestone || isStreakMilestone
                                     ? `streak:${updatedStreak}`
-                                    : `pages-read:${id}:${new Date().toISOString().slice(0, 10)}`,
+                                    : `reading-time:${id}:${new Date().toISOString().slice(0, 10)}`,
                                 previousStreak: Number(
                                     streakPayload.previousStreak ?? Math.max(updatedStreak - 1, 0)
                                 ),
@@ -397,12 +419,12 @@ const ReaderPage = () => {
                                     ? '7 day streak!'
                                     : isStreakMilestone
                                     ? `${updatedStreak} day streak!`
-                                    : '5 pages done!',
+                                    : '5 minutes read!',
                                 message: isSevenDayMilestone
                                     ? 'One full week complete. Your reading habit is getting strong.'
                                     : isStreakMilestone
                                     ? 'Milestone unlocked! Your reading habit is becoming powerful.'
-                                    : "Today's reading day is counted. Tiny session, real momentum.",
+                                    : "Today's reading day is counted. Five focused minutes, real momentum.",
                                 ctaLabel: 'Keep Reading',
                             });
                         })
@@ -442,6 +464,12 @@ const ReaderPage = () => {
         return () => clearTimeout(autoSaveDebounceRef.current);
     }, [currentPage, bookmarks, saveProgress]);
 
+    useEffect(() => {
+        if (!totalPages || initialProgressReconciledRef.current) return;
+        initialProgressReconciledRef.current = true;
+        saveProgress(currentPageRef.current, true);
+    }, [totalPages, saveProgress]);
+
     // -- Auto-save every 20 seconds while the reader is open -------------------
     useEffect(() => {
         autoSaveTimerRef.current = setInterval(() => {
@@ -452,12 +480,10 @@ const ReaderPage = () => {
 
     const handleBackToLibrary = useCallback(async (event) => {
         event.preventDefault();
-        const sessionPagesRead = MIN_SESSION_PAGES_FOR_READING_DAY;
         await saveProgress(currentPageRef.current, true);
 
-        if (sessionPagesRead < MIN_SESSION_PAGES_FOR_READING_DAY) {
-            showToast("Read at least 5 pages to count today's progress.", 'error');
-            return;
+        if (activeReadingSecondsRef.current < MIN_SESSION_SECONDS_FOR_READING_DAY) {
+            showToast("Read for at least 5 minutes to count today's streak.", 'error');
         }
 
         if (window.history.length > 1) {
@@ -1025,7 +1051,7 @@ const ReaderPage = () => {
                                     },
                                     {
                                         label: 'Reading Time',
-                                        value: `${readingMinutes} min`,
+                                        value: `${Math.floor(readingSeconds / 60)} min`,
                                         icon: Clock,
                                     },
                                     {
