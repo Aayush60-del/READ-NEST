@@ -469,15 +469,16 @@ const UserProgress = async (req, res) => {
 };
 
 
-const MIN_PAGES_TO_COUNT_READING_DAY = 5;
+const MIN_SECONDS_TO_COUNT_READING_DAY = 5 * 60;
 
 const saveUserProgress = async (req, res) => {
     try {
         const { id: userId } = req.user;
         const bookId = req.params.id;
-        const { currentPage, sessionPagesRead = 0 } = req.body;
+        const { currentPage, totalPages, sessionPagesRead = 0, sessionReadingSeconds = 0 } = req.body;
         const normalizedSessionPagesRead = Math.max(0, Number(sessionPagesRead) || 0);
-        const shouldCountReadingDay = normalizedSessionPagesRead >= MIN_PAGES_TO_COUNT_READING_DAY;
+        const normalizedSessionReadingSeconds = Math.max(0, Number(sessionReadingSeconds) || 0);
+        const shouldCountReadingDay = normalizedSessionReadingSeconds >= MIN_SECONDS_TO_COUNT_READING_DAY;
 
         if (!isValidObjectId(bookId)) {
             return res.status(400).json({
@@ -502,7 +503,13 @@ const saveUserProgress = async (req, res) => {
             });
         }
 
-        const safeTotalPages = Math.max(1, Number(book.totalPages) || 1);
+        const clientTotalPages = Number(totalPages);
+        const safeTotalPages = Math.max(
+            1,
+            Number.isFinite(clientTotalPages) ? Math.floor(clientTotalPages) : 0,
+            Number(book.totalPages) || 0,
+            Number(existingProgress?.totalPages) || 0
+        );
         const normalizedPage = Math.min(Math.max(Number(currentPage) || 0, 0), safeTotalPages);
 
         const percentageCompleted = Math.round(
@@ -527,6 +534,17 @@ const saveUserProgress = async (req, res) => {
             },
             { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
+
+        if (
+            Number.isFinite(clientTotalPages) &&
+            clientTotalPages >= 1 &&
+            Math.floor(clientTotalPages) !== Number(book.totalPages)
+        ) {
+            await BookModel.updateOne(
+                { _id: bookId },
+                { $set: { totalPages: Math.floor(clientTotalPages) } }
+            );
+        }
 
         // Send Book Completion Notification only on the FIRST time it becomes completed
         if (isCompleted && (!existingProgress || !existingProgress.isCompleted)) {
@@ -591,13 +609,15 @@ const saveUserProgress = async (req, res) => {
             progressSaved: true,
             readingDayCounted: shouldCountReadingDay,
             sessionPagesRead: normalizedSessionPagesRead,
+            sessionReadingSeconds: normalizedSessionReadingSeconds,
             data: {
                 currentPage: normalizedPage,
                 percentageCompleted,
                 isCompleted,
                 progressSaved: true,
                 readingDayCounted: shouldCountReadingDay,
-                sessionPagesRead: normalizedSessionPagesRead
+                sessionPagesRead: normalizedSessionPagesRead,
+                sessionReadingSeconds: normalizedSessionReadingSeconds
             }
         });
 
