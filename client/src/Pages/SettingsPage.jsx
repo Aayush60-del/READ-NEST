@@ -56,11 +56,10 @@ const StatusMessage = ({ status }) => {
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border ${
-        isError
+      className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border ${isError
           ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
           : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-      }`}
+        }`}
     >
       {isError ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
       {status.message}
@@ -77,9 +76,8 @@ const Toggle = ({ label, description, checked, onChange }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c97b6b] ${
-        checked ? 'bg-[#ff7a4f]' : 'bg-white/10'
-      }`}
+      className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c97b6b] ${checked ? 'bg-[#ff7a4f]' : 'bg-white/10'
+        }`}
     >
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
     </button>
@@ -142,7 +140,7 @@ const SettingsPage = () => {
       // Sync from backend
       api.get(ENDPOINTS.USER.PROFILE).then((res) => {
         if (res?.user?.notificationSettings) setNotifSettings(res.user.notificationSettings);
-      }).catch(()=>{});
+      }).catch(() => { });
     }
   }, [user]);
 
@@ -327,259 +325,257 @@ const SettingsPage = () => {
 
             <div className="space-y-6">
 
-            {/* -- Profile Settings -- */}
-            <Section id="profile" title="Profile" description="Update your display name and email" icon={User} delay={0.05}>
-              <form onSubmit={handleProfileSave} className="space-y-5">
-                {/* Avatar */}
-                <div className="flex items-center gap-4 pb-4 border-b border-white/[0.08]">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#c97b6b] to-[#a65d50] flex items-center justify-center shadow-lg">
-                      <span className="text-2xl font-serif font-bold text-white">{initial}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-[#111827] dark:text-white">{user?.name || 'Reader'}</p>
-                    <p className="text-xs text-slate-500">{user?.email}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field
-                    label="Full Name"
-                    id="name"
-                    value={profileForm.name}
-                    onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="Your name"
-                  />
-                  <Field
-                    label="Email Address"
-                    id="email"
-                    type="email"
-                    value={profileForm.email}
-                    onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))}
-                    placeholder="your@email.com"
-                  />
-                </div>
-
-                <StatusMessage status={profileStatus} />
-
-                <div className="flex justify-end">
-                  <motion.button
-                    type="submit"
-                    disabled={profileStatus.loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="px-6 py-2.5 bg-[#c97b6b] hover:bg-[#b8695c] text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-colors disabled:opacity-60"
-                  >
-                    {profileStatus.loading ? 'Saving...' : 'Save Profile'}
-                  </motion.button>
-                </div>
-              </form>
-            </Section>
-
-            {/* -- Change Password -- */}
-            <Section id="security" title="Account Security" description="Change your password" icon={Lock} accentColor="#5227FF" delay={0.1}>
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <Field
-                  label="Current Password"
-                  id="currentPassword"
-                  type={showPasswords.current ? 'text' : 'password'}
-                  value={passwordForm.currentPassword}
-                  onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
-                  placeholder="Enter current password"
-                  rightElement={
-                    <button type="button" onClick={() => setShowPasswords(s => ({ ...s, current: !s.current }))}>
-                      {showPasswords.current
-                        ? <EyeOff className="w-4 h-4 text-slate-500" />
-                        : <Eye className="w-4 h-4 text-slate-500" />}
-                    </button>
-                  }
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field
-                    label="New Password"
-                    id="newPassword"
-                    type={showPasswords.new ? 'text' : 'password'}
-                    value={passwordForm.newPassword}
-                    onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
-                    placeholder="New password"
-                    rightElement={
-                      <button type="button" onClick={() => setShowPasswords(s => ({ ...s, new: !s.new }))}>
-                        {showPasswords.new
-                          ? <EyeOff className="w-4 h-4 text-slate-500" />
-                          : <Eye className="w-4 h-4 text-slate-500" />}
-                      </button>
-                    }
-                  />
-                  <Field
-                    label="Confirm New Password"
-                    id="confirmPassword"
-                    type={showPasswords.confirm ? 'text' : 'password'}
-                    value={passwordForm.confirmPassword}
-                    onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                    placeholder="Repeat new password"
-                    rightElement={
-                      <button type="button" onClick={() => setShowPasswords(s => ({ ...s, confirm: !s.confirm }))}>
-                        {showPasswords.confirm
-                          ? <EyeOff className="w-4 h-4 text-slate-500" />
-                          : <Eye className="w-4 h-4 text-slate-500" />}
-                      </button>
-                    }
-                  />
-                </div>
-
-                <StatusMessage status={passwordStatus} />
-
-                <div className="flex justify-end">
-                  <motion.button
-                    type="submit"
-                    disabled={passwordStatus.loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="px-6 py-2.5 bg-[#1a1a2e] dark:bg-[#5227FF] hover:opacity-90 text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-colors disabled:opacity-60"
-                  >
-                    {passwordStatus.loading ? 'Updating...' : 'Update Password'}
-                  </motion.button>
-                </div>
-              </form>
-            </Section>
-
-            {/* -- Notification Settings -- */}
-            <Section id="notifications" title="Notifications" description="Manage your push notifications and alerts" icon={Bell} accentColor="#f59e0b" delay={0.12}>
-              <div className="space-y-4">
-                <Toggle 
-                  label="Browser Push Notifications" 
-                  description="Receive notifications even when ReadNest is closed"
-                  checked={notifSettings.enabled}
-                  onChange={(v) => handleNotifToggle('enabled', v)}
-                />
-                
-                {notifSettings.enabled && (
-                  <div className="pl-4 ml-4 border-l-2 border-[#c97b6b]/20 space-y-4 transition-all duration-300 opacity-100">
-                    <Toggle 
-                      label="Daily Reminders" 
-                      description="Motivational quotes and streak protection alerts at 12 PM, 6 PM, and 9 PM"
-                      checked={notifSettings.dailyReminders}
-                      onChange={(v) => handleNotifToggle('dailyReminders', v)}
-                    />
-                    <Toggle 
-                      label="Streak Achievements" 
-                      description="Celebrate when you hit 3, 7, 30+ day reading milestones"
-                      checked={notifSettings.streakAchievements}
-                      onChange={(v) => handleNotifToggle('streakAchievements', v)}
-                    />
-                    <Toggle 
-                      label="Book Completions" 
-                      description="Get notified when you successfully finish a book"
-                      checked={notifSettings.bookCompletion}
-                      onChange={(v) => handleNotifToggle('bookCompletion', v)}
-                    />
-                  </div>
-                )}
-              </div>
-            </Section>
-
-            {/* -- Preferences -- */}
-            <Section id="appearance" title="Appearance" description="Personalize your display experience" icon={Palette} accentColor="#2f766d" delay={0.15}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => isDark && toggleTheme()}
-                  className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
-                    !isDark
-                      ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
-                      : 'border-white/[0.08] bg-[#070b12] hover:border-[#ff7a4f]/25'
-                  }`}
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#ff9c7a] shadow-sm">
-                    <Sun className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827] dark:text-white">Light mode</p>
-                    <p className="text-xs text-slate-500">Warm, clean reading workspace.</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => !isDark && toggleTheme()}
-                  className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
-                    isDark
-                      ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
-                      : 'border-white/[0.08] bg-[#070b12] hover:border-[#ff7a4f]/25'
-                  }`}
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#111827] text-[#e8a898] shadow-sm">
-                    <Moon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827] dark:text-white">Dark mode</p>
-                    <p className="text-xs text-slate-500">Deep navy interface for focus.</p>
-                  </div>
-                </button>
-              </div>
-            </Section>
-
-            {/* -- Security / Danger Zone -- */}
-            <Section id="danger-zone" title="Danger Zone" description="Session and account management" icon={LogOut} accentColor="#ef4444" delay={0.2}>
-              <div className="space-y-4">
-                {/* Sign Out */}
-                <div className="flex items-center justify-between p-4 bg-[#fcf9f2] rounded-xl border border-[#e8e4db] dark:bg-[#070b12] dark:border-white/[0.08]">
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827] dark:text-white">Sign out</p>
-                    <p className="text-xs text-slate-500">End your current session</p>
-                  </div>
-                  <motion.button
-                    onClick={signOut}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-black/[0.05] hover:bg-black/[0.08] rounded-xl text-sm font-bold text-[#111827] transition-colors dark:bg-white/[0.06] dark:hover:bg-white/[0.1] dark:text-white"
-                  >
-                    <LogOut className="w-4 h-4" /> Sign Out
-                  </motion.button>
-                </div>
-
-                {/* Delete Account */}
-                <div className="p-4 bg-red-500/[0.04] dark:bg-red-500/[0.08] rounded-xl border border-red-500/10">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-red-600 dark:text-red-400">Delete Account</p>
-                      <p className="text-xs text-red-500/70 dark:text-red-400/60 mt-0.5">
-                        Permanently remove your account and all data. This cannot be undone.
-                      </p>
-                    </div>
-                    {!deleteConfirm ? (
-                      <button
-                        onClick={() => setDeleteConfirm(true)}
-                        className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" /> Delete
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => setDeleteConfirm(false)}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleDeleteAccount}
-                          className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-wide transition-colors"
-                        >
-                          Confirm Delete
-                        </button>
+              {/* -- Profile Settings -- */}
+              <Section id="profile" title="Profile" description="Update your display name and email" icon={User} delay={0.05}>
+                <form onSubmit={handleProfileSave} className="space-y-5">
+                  {/* Avatar */}
+                  <div className="flex items-center gap-4 pb-4 border-b border-white/[0.08]">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#c97b6b] to-[#a65d50] flex items-center justify-center shadow-lg">
+                        <span className="text-2xl font-serif font-bold text-white">{initial}</span>
                       </div>
-                    )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#111827] dark:text-white">{user?.name || 'Reader'}</p>
+                      <p className="text-xs text-slate-500">{user?.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field
+                      label="Full Name"
+                      id="name"
+                      value={profileForm.name}
+                      onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder="Your name"
+                    />
+                    <Field
+                      label="Email Address"
+                      id="email"
+                      type="email"
+                      value={profileForm.email}
+                      onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))}
+                      placeholder="your@email.com"
+                    />
+                  </div>
+
+                  <StatusMessage status={profileStatus} />
+
+                  <div className="flex justify-end">
+                    <motion.button
+                      type="submit"
+                      disabled={profileStatus.loading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="px-6 py-2.5 bg-[#c97b6b] hover:bg-[#b8695c] text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-colors disabled:opacity-60"
+                    >
+                      {profileStatus.loading ? 'Saving...' : 'Save Profile'}
+                    </motion.button>
+                  </div>
+                </form>
+              </Section>
+
+              {/* -- Change Password -- */}
+              <Section id="security" title="Account Security" description="Change your password" icon={Lock} accentColor="#5227FF" delay={0.1}>
+                <form onSubmit={handlePasswordChange} className="space-y-4">
+                  <Field
+                    label="Current Password"
+                    id="currentPassword"
+                    type={showPasswords.current ? 'text' : 'password'}
+                    value={passwordForm.currentPassword}
+                    onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+                    placeholder="Enter current password"
+                    rightElement={
+                      <button type="button" onClick={() => setShowPasswords(s => ({ ...s, current: !s.current }))}>
+                        {showPasswords.current
+                          ? <EyeOff className="w-4 h-4 text-slate-500" />
+                          : <Eye className="w-4 h-4 text-slate-500" />}
+                      </button>
+                    }
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field
+                      label="New Password"
+                      id="newPassword"
+                      type={showPasswords.new ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                      placeholder="New password"
+                      rightElement={
+                        <button type="button" onClick={() => setShowPasswords(s => ({ ...s, new: !s.new }))}>
+                          {showPasswords.new
+                            ? <EyeOff className="w-4 h-4 text-slate-500" />
+                            : <Eye className="w-4 h-4 text-slate-500" />}
+                        </button>
+                      }
+                    />
+                    <Field
+                      label="Confirm New Password"
+                      id="confirmPassword"
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                      placeholder="Repeat new password"
+                      rightElement={
+                        <button type="button" onClick={() => setShowPasswords(s => ({ ...s, confirm: !s.confirm }))}>
+                          {showPasswords.confirm
+                            ? <EyeOff className="w-4 h-4 text-slate-500" />
+                            : <Eye className="w-4 h-4 text-slate-500" />}
+                        </button>
+                      }
+                    />
+                  </div>
+
+                  <StatusMessage status={passwordStatus} />
+
+                  <div className="flex justify-end">
+                    <motion.button
+                      type="submit"
+                      disabled={passwordStatus.loading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="px-6 py-2.5 bg-[#1a1a2e] dark:bg-[#5227FF] hover:opacity-90 text-white text-sm font-bold tracking-widest uppercase rounded-xl transition-colors disabled:opacity-60"
+                    >
+                      {passwordStatus.loading ? 'Updating...' : 'Update Password'}
+                    </motion.button>
+                  </div>
+                </form>
+              </Section>
+
+              {/* -- Notification Settings -- */}
+              <Section id="notifications" title="Notifications" description="Manage your push notifications and alerts" icon={Bell} accentColor="#f59e0b" delay={0.12}>
+                <div className="space-y-4">
+                  <Toggle
+                    label="Browser Push Notifications"
+                    description="Receive notifications even when ReadNest is closed"
+                    checked={notifSettings.enabled}
+                    onChange={(v) => handleNotifToggle('enabled', v)}
+                  />
+
+                  {notifSettings.enabled && (
+                    <div className="pl-4 ml-4 border-l-2 border-[#c97b6b]/20 space-y-4 transition-all duration-300 opacity-100">
+                      <Toggle
+                        label="Daily Reminders"
+                        description="Motivational quotes and streak protection alerts at 12 PM, 6 PM, and 9 PM"
+                        checked={notifSettings.dailyReminders}
+                        onChange={(v) => handleNotifToggle('dailyReminders', v)}
+                      />
+                      <Toggle
+                        label="Streak Achievements"
+                        description="Celebrate when you hit 3, 7, 30+ day reading milestones"
+                        checked={notifSettings.streakAchievements}
+                        onChange={(v) => handleNotifToggle('streakAchievements', v)}
+                      />
+                      <Toggle
+                        label="Book Completions"
+                        description="Get notified when you successfully finish a book"
+                        checked={notifSettings.bookCompletion}
+                        onChange={(v) => handleNotifToggle('bookCompletion', v)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </Section>
+
+              {/* -- Preferences -- */}
+              <Section id="appearance" title="Appearance" description="Personalize your display experience" icon={Palette} accentColor="#2f766d" delay={0.15}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => isDark && toggleTheme()}
+                    className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${!isDark
+                        ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
+                        : 'border-white/[0.08] bg-[#070b12] hover:border-[#ff7a4f]/25'
+                      }`}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#ff9c7a] shadow-sm">
+                      <Sun className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827] dark:text-white">Light mode</p>
+                      <p className="text-xs text-slate-500">Warm, clean reading workspace.</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => !isDark && toggleTheme()}
+                    className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${isDark
+                        ? 'border-[#c97b6b]/35 bg-[#c97b6b]/10'
+                        : 'border-white/[0.08] bg-[#070b12] hover:border-[#ff7a4f]/25'
+                      }`}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#111827] text-[#e8a898] shadow-sm">
+                      <Moon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827] dark:text-white">Dark mode</p>
+                      <p className="text-xs text-slate-500">Deep navy interface for focus.</p>
+                    </div>
+                  </button>
+                </div>
+              </Section>
+
+              {/* -- Security / Danger Zone -- */}
+              <Section id="danger-zone" title="Danger Zone" description="Session and account management" icon={LogOut} accentColor="#ef4444" delay={0.2}>
+                <div className="space-y-4">
+                  {/* Sign Out */}
+                  <div className="flex items-center justify-between p-4 bg-[#fcf9f2] rounded-xl border border-[#e8e4db] dark:bg-[#070b12] dark:border-white/[0.08]">
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827] dark:text-white">Sign out</p>
+                      <p className="text-xs text-slate-500">End your current session</p>
+                    </div>
+                    <motion.button
+                      onClick={signOut}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-black/[0.05] hover:bg-black/[0.08] rounded-xl text-sm font-bold text-[#111827] transition-colors dark:bg-white/[0.06] dark:hover:bg-white/[0.1] dark:text-white"
+                    >
+                      <LogOut className="w-4 h-4" /> Sign Out
+                    </motion.button>
+                  </div>
+
+                  {/* Delete Account */}
+                  <div className="p-4 bg-red-500/[0.04] dark:bg-red-500/[0.08] rounded-xl border border-red-500/10">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-red-600 dark:text-red-400">Delete Account</p>
+                        <p className="text-xs text-red-500/70 dark:text-red-400/60 mt-0.5">
+                          Permanently remove your account and all data. This cannot be undone.
+                        </p>
+                      </div>
+                      {!deleteConfirm ? (
+                        <button
+                          onClick={() => setDeleteConfirm(true)}
+                          className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" /> Delete
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setDeleteConfirm(false)}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/[0.06] hover:text-white transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleDeleteAccount}
+                            className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-wide transition-colors"
+                          >
+                            Confirm Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Section>
+              </Section>
 
             </div>
           </div>
         </div>
-    </main>
+      </main>
     </div>
   );
 };

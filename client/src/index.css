@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "@fontsource-variable/geist";
 @tailwind base;
 @tailwind components;
@@ -225,38 +225,79 @@
 
 
   @keyframes rn-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes rn-fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
   }
 
   @keyframes rn-pop-in {
-    from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   }
 
   @keyframes rn-pop-out {
-    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    to { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+    from {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.96);
+    }
   }
 
   @keyframes rn-dropdown-in {
-    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   @keyframes rn-sheet-in-right {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
+    from {
+      transform: translateX(100%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
   }
 
   @keyframes rn-sheet-out-right {
-    from { transform: translateX(0); }
-    to { transform: translateX(100%); }
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
   }
 
   .rn-dialog-overlay[data-state="open"],
@@ -304,6 +345,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-50%);
   }
@@ -328,6 +370,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-50%);
   }
@@ -352,6 +395,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-50%);
   }
@@ -376,6 +420,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-50%);
   }
@@ -395,6 +440,7 @@
     animation: none;
   }
 }
+
 /* READNEST SAAS LANDING FIX START */
 
 .landing-page {
@@ -854,12 +900,10 @@ html body .landing-page section p {
   pointer-events: none;
   opacity: 0;
   transition: opacity 260ms ease;
-  background: radial-gradient(
-    420px circle at var(--rn-glow-x, 50%) var(--rn-glow-y, 50%),
-    rgba(201, 123, 107, 0.18),
-    rgba(255, 255, 255, 0.08) 38%,
-    transparent 68%
-  );
+  background: radial-gradient(420px circle at var(--rn-glow-x, 50%) var(--rn-glow-y, 50%),
+      rgba(201, 123, 107, 0.18),
+      rgba(255, 255, 255, 0.08) 38%,
+      transparent 68%);
 }
 
 .rn-fingertips-card:hover::before {

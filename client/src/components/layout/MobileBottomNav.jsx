@@ -15,7 +15,7 @@ const MobileBottomNav = () => {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#e8e4db] bg-[#fffaf3]/92 px-2 pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/92 dark:shadow-[0_-8px_30px_rgba(0,0,0,0.24)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#e8e4db] bg-[#fffaf3]/92 px-2 pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0f1726]/92 dark:shadow-[0_-8px_30px_rgba(0,0,0,0.24)] md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Mobile navigation"
     >

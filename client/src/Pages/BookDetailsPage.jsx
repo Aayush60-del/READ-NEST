@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ const BookDetailsPage = () => {
     const [error, setError] = useState('');
     const [adding, setAdding] = useState(false);
 
-    const fetchBookDetails = async () => {
+    const fetchBookDetails = useCallback(async () => {
         if (!id) return;
 
         setLoading(true);
@@ -48,11 +48,11 @@ const BookDetailsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         fetchBookDetails();
-    }, [id]);
+    }, [fetchBookDetails]);
 
 
     const scrollSimilar = (direction) => {

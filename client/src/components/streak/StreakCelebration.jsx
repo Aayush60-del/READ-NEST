@@ -320,7 +320,7 @@ function getAchievementCopy({ type, streak, milestone, title, message, ctaLabel 
 export default function StreakCelebration({
   open,
   onClose,
-  previousStreak = 0,
+  previousStreak: _previousStreak = 0,
   newStreak = 1,
   weeklyProgress = [],
   milestone = false,

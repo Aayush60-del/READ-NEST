@@ -62,8 +62,8 @@ const DashboardNavbar = ({ hideLogo = true }) => {
 
         {/* Left Side: Logo (Optional) & Search */}
         <div className="flex items-center gap-4 md:gap-6 flex-1">
-          {/* Mobile Hamburger Menu Trigger */}
-          <button onClick={() => setMobileNavOpen(true)} className="text-slate-700 transition-colors hover:text-[#c96f5c] dark:text-white dark:hover:text-[#ff9c7a] lg:hidden">
+          {/* Tablet sidebar trigger. Mobile uses MobileBottomNav instead. */}
+          <button onClick={() => setMobileNavOpen(true)} className="hidden text-slate-700 transition-colors hover:text-[#c96f5c] dark:text-white dark:hover:text-[#ff9c7a] md:flex lg:hidden">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -274,7 +274,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileNavOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] lg:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden md:block lg:hidden"
             />
 
             {/* Sidebar Slide-in */}
@@ -283,7 +283,7 @@ const DashboardNavbar = ({ hideLogo = true }) => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 230 }}
-              className="fixed inset-y-0 left-0 z-[210] flex w-[min(86vw,320px)] flex-col overflow-hidden border-r border-[#e8e4db] bg-[#fffaf3] text-[#111827] shadow-[24px_0_80px_rgba(0,0,0,0.32)] dark:border-white/[0.08] dark:bg-[#070b12] dark:text-white lg:hidden"
+              className="fixed inset-y-0 left-0 z-[210] hidden w-[min(86vw,320px)] flex-col overflow-hidden border-r border-[#e8e4db] bg-[#fffaf3] text-[#111827] shadow-[24px_0_80px_rgba(0,0,0,0.32)] dark:border-white/[0.08] dark:bg-[#070b12] dark:text-white md:flex lg:hidden"
             >
               <div
                 className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-5"

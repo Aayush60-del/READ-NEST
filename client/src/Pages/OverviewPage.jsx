@@ -113,13 +113,12 @@ const GreetingVisual = ({ mood }) => {
   return (
     <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] overflow-hidden rounded-r-[28px] md:block">
       <div
-        className={`absolute inset-0 ${
-          isMorning
+        className={`absolute inset-0 ${isMorning
             ? 'bg-[radial-gradient(circle_at_56%_30%,rgba(255,196,107,0.55),transparent_18%),linear-gradient(140deg,rgba(255,161,94,0.22),rgba(8,13,24,0.02)_48%,rgba(7,11,18,0.84))]'
             : isAfternoon
-            ? 'bg-[radial-gradient(circle_at_55%_25%,rgba(255,205,130,0.5),transparent_17%),linear-gradient(140deg,rgba(201,123,107,0.22),rgba(11,17,27,0.2)_52%,rgba(7,11,18,0.82))]'
-            : 'bg-[radial-gradient(circle_at_58%_28%,rgba(212,226,255,0.35),transparent_13%),linear-gradient(140deg,rgba(22,33,56,0.38),rgba(7,11,18,0.9))]'
-        }`}
+              ? 'bg-[radial-gradient(circle_at_55%_25%,rgba(255,205,130,0.5),transparent_17%),linear-gradient(140deg,rgba(201,123,107,0.22),rgba(11,17,27,0.2)_52%,rgba(7,11,18,0.82))]'
+              : 'bg-[radial-gradient(circle_at_58%_28%,rgba(212,226,255,0.35),transparent_13%),linear-gradient(140deg,rgba(22,33,56,0.38),rgba(7,11,18,0.9))]'
+          }`}
       />
 
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 360 220" fill="none" aria-hidden="true">
@@ -195,11 +194,10 @@ const StreakCard = ({ streak, activityDays, hasStreakData, loading }) => {
           {activityDays.slice(-7).map((day, index) => (
             <div key={`${day.date || day.dayLabel}-${index}`} className="flex flex-col items-center gap-2">
               <div
-                className={`grid h-8 w-8 place-items-center rounded-full border text-[11px] ${
-                  day.read
+                className={`grid h-8 w-8 place-items-center rounded-full border text-[11px] ${day.read
                     ? 'border-[#ff9c7a]/35 bg-[#ff7a4f] text-white shadow-[0_0_18px_rgba(255,122,79,0.34)]'
                     : 'border-black/10 bg-black/[0.04] text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-600'
-                }`}
+                  }`}
               >
                 {day.read ? <Flame className="h-3.5 w-3.5" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
               </div>
@@ -312,11 +310,10 @@ const ActivityCard = ({ stats, activityDays, activeDaysThisMonth, loading }) => 
           {activityDays.map((day, index) => (
             <div key={`${day.date}-${index}`} className="flex h-full flex-1 items-end">
               <div
-                className={`w-full rounded-t-lg transition-all duration-500 ${
-                  day.read
+                className={`w-full rounded-t-lg transition-all duration-500 ${day.read
                     ? 'bg-gradient-to-t from-[#ff7a4f] to-[#ffc19c] shadow-[0_0_18px_rgba(255,122,79,0.22)]'
                     : 'bg-black/[0.08] dark:bg-white/[0.06]'
-                }`}
+                  }`}
                 style={{ height: day.read ? '72%' : '12%' }}
                 title={day.date}
               />
@@ -336,9 +333,8 @@ const StatCard = ({ icon: Icon, label, value, loading, accent = false }) => (
   <GlassCard className="min-h-[126px] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-white/[0.14]">
     <div className="flex h-full flex-col justify-between gap-5">
       <div
-        className={`grid h-10 w-10 place-items-center rounded-2xl ${
-          accent ? 'bg-[#ff7a4f]/12 text-[#c96f5c] dark:text-[#ff9c7a]' : 'bg-black/[0.05] text-slate-500 dark:bg-white/[0.06] dark:text-slate-400'
-        }`}
+        className={`grid h-10 w-10 place-items-center rounded-2xl ${accent ? 'bg-[#ff7a4f]/12 text-[#c96f5c] dark:text-[#ff9c7a]' : 'bg-black/[0.05] text-slate-500 dark:bg-white/[0.06] dark:text-slate-400'
+          }`}
       >
         <Icon className="h-5 w-5" />
       </div>

@@ -221,12 +221,9 @@ const ReaderPage = () => {
     // -- Core state ----------------------------------------------------------
     const [book, setBook] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
-    const [pdfData, setPdfData] = useState(null);
     const pdfObjectUrlRef = useRef(null);
     const pageContainerRef = useRef(null);
-    const [pageRenderWidth, setPageRenderWidth] = useState(() =>
-        typeof window !== "undefined" ? Math.max(280, Math.min(window.innerWidth - 24, 900)) : 900
-    );
+    const pageRenderWidth = typeof window !== "undefined" ? Math.max(280, Math.min(window.innerWidth - 24, 900)) : 900;
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [pdfError, setPdfError] = useState(false);  // PDF-specific render error
@@ -319,7 +316,6 @@ const ReaderPage = () => {
         setError('');
         setPdfError(false);
         setPdfUrl(null);
-        setPdfData(null);
         setTotalPages(0);
         setPdfOutline([]);
         setSavedResumePage(null);
@@ -387,7 +383,6 @@ const ReaderPage = () => {
             console.log("[ReaderPage] PDF stream URL prepared:", streamUrl);
 
             setPdfUrl(streamUrl);
-            setPdfData(null);
         } catch (err) {
             console.error('[ReaderPage] Failed to load:', err);
             setError(err.message || 'Failed to load book.');
