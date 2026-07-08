@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart2, Compass, Home, Library, User } from 'lucide-react';
+import { BarChart2, Compass, Home, Library, ShieldAlert, User } from 'lucide-react';
+import { getStoredSession } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -12,6 +13,14 @@ const navItems = [
 
 const MobileBottomNav = () => {
   const location = useLocation();
+  const { user } = getStoredSession();
+  const items = user?.role === 'admin'
+    ? [
+        ...navItems.slice(0, 4),
+        { label: 'System', path: '/admin', aliases: ['/admin'], icon: ShieldAlert },
+        navItems[4],
+      ]
+    : navItems;
 
   return (
     <nav
@@ -19,8 +28,13 @@ const MobileBottomNav = () => {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Mobile navigation"
     >
-      <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
-        {navItems.map(({ label, path, aliases, icon: Icon }) => {
+      <div
+        className={cn(
+          'mx-auto grid max-w-xl gap-1',
+          user?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-5'
+        )}
+      >
+        {items.map(({ label, path, aliases, icon: Icon }) => {
           const active = aliases.some((alias) =>
             location.pathname === alias || location.pathname.startsWith(`${alias}/`)
           );

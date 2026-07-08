@@ -7,6 +7,7 @@ import {
   FileText,
   Library,
   RefreshCw,
+  Upload,
   UserCheck,
   UserPlus,
   Users,
@@ -31,7 +32,7 @@ const MetricCard = ({ label, value, icon: Icon, loading }) => (
   </div>
 );
 
-const AdminAnalyticsOverview = ({ analytics, loading, error, onRefresh }) => {
+const AdminAnalyticsOverview = ({ analytics, loading, error, onRefresh, onUploadClick }) => {
   const metricCards = [
     { label: 'Total Users', value: analytics?.totalUsers, icon: Users },
     { label: 'New Users Today', value: analytics?.newUsersToday, icon: UserPlus },
@@ -55,15 +56,25 @@ const AdminAnalyticsOverview = ({ analytics, loading, error, onRefresh }) => {
           </div>
           <h1 className="font-serif text-4xl tracking-tight text-black dark:text-white">System Control</h1>
         </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e8e4db] bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-black/60 shadow-sm transition hover:text-black disabled:opacity-60 dark:border-white/10 dark:bg-[#161d27] dark:text-white/60 dark:hover:text-white"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#c97b6b]' : 'text-[#c97b6b]'}`} />
-          Refresh
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={onUploadClick}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c97b6b] px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white shadow-sm transition hover:bg-[#b8695c]"
+          >
+            <Upload className="h-4 w-4" />
+            Upload PDF
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e8e4db] bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-black/60 shadow-sm transition hover:text-black disabled:opacity-60 dark:border-white/10 dark:bg-[#161d27] dark:text-white/60 dark:hover:text-white"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#c97b6b]' : 'text-[#c97b6b]'}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
